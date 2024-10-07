@@ -53,8 +53,15 @@ def embed_document(topic: str, file_name: str):
         count += 1
         embedding = embeddings.embed_query(text)  # Create the embedding for the chunk
         insert_embedding_into_supabase(text, embedding, topic)
-        print("Embedding" + str(count))
+        print(f"Document {topic}/{file_name} embedding {count} done")
+
+    supabase.table("chats").insert(
+        {
+            "topic": topic,
+            "username": "AI Chatbot",
+            "message": f"Document {file_name} successfully embedded",
+        }
+    ).execute()
 
     # Delete the file after processing
     os.remove(file_name)
-    print(f"Document {topic}/{file_name} successfully embedded")
