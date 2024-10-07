@@ -1,4 +1,5 @@
 from PyPDF2 import PdfReader
+from langchain.schema import Document
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_text_splitters import CharacterTextSplitter
 from langchain_community.vectorstores import FAISS
@@ -47,20 +48,22 @@ def get_pdf_answer(topic: str, query: str):
             if content:
                 raw_text += content
 
-    text_splitter = CharacterTextSplitter(
-        separator="\n",
-        chunk_size=800,
-        chunk_overlap=200,
-        length_function=len,
-    )
-    texts = text_splitter.split_text(raw_text)
+    # text_splitter = CharacterTextSplitter(
+    #     separator="\n",
+    #     chunk_size=800,
+    #     chunk_overlap=200,
+    #     length_function=len,
+    # )
+    # texts = text_splitter.split_text(raw_text)
 
-    embeddings = OpenAIEmbeddings()
-    document_search = FAISS.from_texts(texts, embeddings)
+    # embeddings = OpenAIEmbeddings()
+    # document_search = FAISS.from_texts(texts, embeddings)
     chain = load_qa_chain(ChatOpenAI(model_name="gpt-3.5-turbo"), chain_type="stuff")
 
-    docs = document_search.similarity_search(query)
-    res = chain.invoke({"input_documents": docs, "question": query})["output_text"]
+    # docs = document_search.similarity_search(query)
+    res = chain.invoke(
+        {"input_documents": [Document(page_content=raw_text)], "question": query}
+    )["output_text"]
 
     # Cleanup: delete the downloaded PDF files
     for file_name in pdf_files:
