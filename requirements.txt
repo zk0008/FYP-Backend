@@ -1,0 +1,10 @@
+fastapi==0.115.0
+langchain==0.3.2
+langchain_community==0.3.1
+langchain_openai==0.2.1
+langchain_text_splitters==0.3.0
+pydantic
+PyPDF2==3.0.1
+python-dotenv==1.0.1
+typing_extensions==4.12.2
+supabase==2.8.1
