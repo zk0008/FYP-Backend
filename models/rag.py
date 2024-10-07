@@ -29,7 +29,6 @@ def get_rag_answer(topic: str, query: str):
         return "No relevant documents found."
 
     print(f"Chunks found for query: {len(similar_texts)}")
-
     # Use the similar texts for question answering
     chain = load_qa_chain(ChatOpenAI(model_name="gpt-3.5-turbo"), chain_type="stuff")
     return chain.invoke({"input_documents": similar_texts, "question": query})[

@@ -60,4 +60,13 @@ def get_pdf_answer(topic: str, query: str):
     chain = load_qa_chain(ChatOpenAI(model_name="gpt-3.5-turbo"), chain_type="stuff")
 
     docs = document_search.similarity_search(query)
-    return chain.invoke({"input_documents": docs, "question": query})["output_text"]
+    res = chain.invoke({"input_documents": docs, "question": query})["output_text"]
+
+    # Cleanup: delete the downloaded PDF files
+    for file_name in pdf_files:
+        try:
+            os.remove(file_name)
+        except OSError as e:
+            print(f"Error deleting file {file_name}: {e}")
+
+    return res
