@@ -30,7 +30,14 @@ def get_rag_answer(topic: str, query: str):
 
     print(f"Chunks found for query: {len(similar_texts)}")
     # Use the similar texts for question answering
-    chain = load_qa_chain(ChatOpenAI(model_name="gpt-3.5-turbo"), chain_type="stuff")
-    return chain.invoke({"input_documents": similar_texts, "question": query})[
-        "output_text"
-    ]
+    chain = load_qa_chain(
+        ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0), chain_type="stuff"
+    )
+    return chain.invoke(
+        {
+            "input_documents": similar_texts,
+            "question": "The following documents are chunks of text fetched from a RAG langchain. You are the last step of the chain, give an accurate answer to the following query using the provided context: "
+            + query
+            + "If the context is not enough, respond with this fixed template: I do not have enough information to accurately answer that based on current documents.",
+        }
+    )["output_text"]

@@ -1,6 +1,7 @@
 from PyPDF2 import PdfReader
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import CharacterTextSplitter
+from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 import os
 from supabase import create_client, Client
@@ -10,6 +11,7 @@ url: str = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
 key: str = os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")
 supabase: Client = create_client(url, key)
 embeddings = OpenAIEmbeddings()
+llm = ChatOpenAI()
 
 
 def download_pdf(topic: str, file_name: str):
@@ -27,6 +29,26 @@ def insert_embedding_into_supabase(text: str, embedding: list, topic: str):
     ).execute()
 
 
+def summarize_text(text: str) -> str:
+    # Use OpenAI's GPT model to summarize the text
+    messages = [
+        (
+            "system",
+            "You are a chatbot meant to summarize PDF text that is uploaded by user, usually for educational purposes. Your job is to summarize it accurately."
+            + "This summary will be used as a data source in a LLM for queries the user may have later on. If the summary cannot provide the answer for the user, we will then proceed to open the full PDF.",
+        ),
+        ("user", f"Please summarize the following PDF text: {text}"),
+    ]
+    return llm.invoke(messages).content
+
+
+def insert_summary_into_supabase(summary: str, topic: str, file_name: str):
+    # Insert the summarized text into Supabase
+    supabase.table("document_summaries").insert(
+        {"filepath": f"{topic}/{file_name}", "summary": summary}
+    ).execute()
+
+
 def embed_document(topic: str, file_name: str):
     raw_text = ""
     pdf_content = download_pdf(topic, file_name)
@@ -39,9 +61,14 @@ def embed_document(topic: str, file_name: str):
         if content:
             raw_text += content
 
+    # Generate a summary of the entire document
+    summary = summarize_text(raw_text)
+    insert_summary_into_supabase(summary, topic, file_name)
+    print(f"Completed Summarization of {topic}/{file_name}")
+
     text_splitter = CharacterTextSplitter(
         separator="\n",
-        chunk_size=800,
+        chunk_size=4000,
         chunk_overlap=200,
         length_function=len,
     )
@@ -62,6 +89,7 @@ def embed_document(topic: str, file_name: str):
             "message": f"Document {file_name} successfully embedded",
         }
     ).execute()
+    print(f"Completed embedding of {topic}/{file_name}")
 
     # Delete the file after processing
     os.remove(file_name)

@@ -48,17 +48,9 @@ def get_pdf_answer(topic: str, query: str):
             if content:
                 raw_text += content
 
-    # text_splitter = CharacterTextSplitter(
-    #     separator="\n",
-    #     chunk_size=800,
-    #     chunk_overlap=200,
-    #     length_function=len,
-    # )
-    # texts = text_splitter.split_text(raw_text)
-
-    # embeddings = OpenAIEmbeddings()
-    # document_search = FAISS.from_texts(texts, embeddings)
-    chain = load_qa_chain(ChatOpenAI(model_name="gpt-3.5-turbo"), chain_type="stuff")
+    chain = load_qa_chain(
+        ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0), chain_type="stuff"
+    )
 
     # docs = document_search.similarity_search(query)
     res = chain.invoke(
