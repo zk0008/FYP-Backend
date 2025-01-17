@@ -1,2 +1,6 @@
+# Ignore unnecessary Python files
+venv/
 __pycache__/
-models/__pycache__/
+
+# Environment variables
+.env
