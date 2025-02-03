@@ -19,5 +19,5 @@ pip install -r requirements.txt
 Then, run the server locally:
 
 ```bash
-python -m uvicorn index:app --host 0.0.0.0 --port 8000
+python -m uvicorn index:app --host 0.0.0.0 --port 8000 --reload
 ```
