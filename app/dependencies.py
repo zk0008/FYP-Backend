@@ -1,8 +1,8 @@
 from functools import lru_cache
-from typing import Annotated
 
-from fastapi import Depends, HTTPException, Request
-import jwt
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_anthropic import ChatAnthropic
+from supabase import create_client, Client
 
 from app.config import Settings
 
@@ -12,15 +12,32 @@ def get_settings() -> Settings:
     return Settings()
 
 
-def get_current_user(request: Request, settings: Annotated[Settings, Depends(get_settings)]):
-    token = request.cookies.get("access_token")
-    if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+def get_supabase() -> Client:
+    settings = get_settings()
 
-    try:
-        payload = jwt.decode(token, settings.SUPABASE_JWT_SECRET_KEY, algorithms=["HS256"], audience="authenticated")
-        return {"user_id": payload.get("sub")}
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+    supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
+    return supabase
+
+
+def get_graph():
+    pass
+
+
+def get_openai_client():
+    settings = get_settings()
+
+    return ChatOpenAI(
+        model="gpt-4o-mini",
+        temperature=0,
+        api_key=settings.OPENAI_API_KEY
+    )
+
+
+def get_anthropic_client():
+    settings = get_settings()
+
+    return ChatAnthropic(
+        model="claude-3-haiku-20240307",
+        temperature=0,
+        api_key=settings.ANTHROPIC_API_KEY
+    )
