@@ -1,6 +1,6 @@
-# Ignore unnecessary Python files
+__pycache__
+logs/
 venv/
-__pycache__/
 
-# Environment variables
+.DS_Store
 .env
