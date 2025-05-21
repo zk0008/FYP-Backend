@@ -1,0 +1,157 @@
+from base64 import b64encode
+from io import BytesIO
+import logging
+from typing import List, Tuple
+
+from fastapi import UploadFile
+from langchain_core.exceptions import OutputParserException
+from langchain_core.messages import AIMessage
+from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from PIL import Image
+from tiktoken import encoding_for_model
+
+from app.dependencies import get_supabase
+from app.llms import gemini_2_flash_lite
+from .components.parsers import img_desc_parser, img_desc_reparser
+from .components.prompts import IMAGE_DESCRIPTION_PROMPT
+
+
+class BasePipeline:
+    DEFAULT_CHUNK_SIZE = 1000
+    DEFAULT_CHUNK_OVERLAP = 200
+    EMBEDDING_MODEL_NAME = "text-embedding-ada-002"
+    MAX_RETRIES = 3
+
+    def __init__(self,
+        uploader_id: str,
+        chatroom_id: str,
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
+        chunk_overlap: int = DEFAULT_CHUNK_OVERLAP
+    ):
+        self.uploader_id = uploader_id
+        self.chatroom_id = chatroom_id
+
+        self.embedding_model = OpenAIEmbeddings(model=self.EMBEDDING_MODEL_NAME)
+        self.encoding = encoding_for_model(self.EMBEDDING_MODEL_NAME)
+
+        self.text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            length_function=lambda text: len(self.encoding.encode(text))
+        )
+
+        self.supabase = get_supabase()
+        self.logger = logging.getLogger(self.__class__.__name__)
+
+    def _read_file(self, uploaded_file: UploadFile):
+        data = uploaded_file.file.read()
+        uploaded_file.file.close()
+        return data
+
+    def _invoke_model_with_retry(self, message: dict) -> AIMessage:
+        for attempt in range(self.MAX_RETRIES):
+            try:
+                response = gemini_2_flash_lite.invoke([message])
+                return response
+            except Exception as e:
+                if attempt < self.MAX_RETRIES - 1:
+                    self.logger.warning(f"Model invocation on attempt {attempt + 1} failed. Retrying...", exc_info=True)
+                else:
+                    raise RuntimeError(e)
+
+    def _encode_pil_image_to_base64(self, pil_image: Image.Image, format: str = "PNG") -> str:
+        """
+        Encodes an input PIL image into a base64 byte-string in the specified format.
+
+        Args:
+            pil_image: PIL image to be encoded.
+            format (str): Format to encode the resulting base64 byte-string in. Defaults to "PNG".
+
+        Returns:
+            str: Base64 byte-string.
+        """
+        buffer = BytesIO()
+        pil_image.save(buffer, format=format)
+        encoded_str = b64encode(buffer.getvalue()).decode("utf-8")
+        return encoded_str
+
+    def _describe_image(self, image_b64_data: str, mime_type: str = "image/png") -> str:
+        message = {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": IMAGE_DESCRIPTION_PROMPT
+                },
+                {
+                    "type": "media",
+                    "source_type": "base64",
+                    "data": image_b64_data,
+                    "mime_type": mime_type
+                }
+            ]
+        }
+
+        try:
+            response = self._invoke_model_with_retry(message)
+            parsed_content = img_desc_parser.parse(response.content)
+            return parsed_content.image_description
+        except OutputParserException:
+            fixed_content = img_desc_reparser.parse(response.content)
+            return fixed_content.image_description
+        except Exception as e:
+            raise RuntimeError(f"Image description failed with error: {e}")
+
+    def _create_embeddings(self, text: str | List[str]) -> Tuple[List[str], List[List[float]]]:
+        contents = []        # Chunked text contents for subsequent embedding
+        if isinstance(text, str):
+            contents = self.text_splitter.split_text(text)
+        elif isinstance(text, list):
+            for item in text:
+                item_chunks = self.text_splitter.split_text(item)
+                contents.extend(item_chunks)
+
+        # Create corresponding embedding chunks
+        embeddings = self.embedding_model.embed_documents(contents)
+        return contents, embeddings
+
+    def _insert_document(self) -> dict:
+        try:
+            response = (
+                self.supabase.table("documents")
+                .insert({
+                    "uploader_id": self.uploader_id,
+                    "chatroom_id": self.chatroom_id
+                })
+                .execute()
+            )
+            return response.data[0]
+        except Exception as e:
+            raise RuntimeError(f"Document entry insertion failed with error: {e}")
+
+
+    def _insert_embeddings(self, document_id: str, contents: List[str], embeddings: List[List[float]]) -> dict:
+        try:
+            payload = [
+                {
+                    "document_id": document_id,
+                    "chunk_index": i,
+                    "content": content,
+                    "embedding": embedding
+                }
+                for i, (content, embedding) in enumerate(zip(contents, embeddings))
+            ]
+
+            response = (
+                self.supabase.table("chunks")
+                .insert(payload)
+                .execute()
+            )
+
+            return response
+        except Exception as e:
+            raise RuntimeError(f"Chunk entry insertion failed with error: {e}")
+
+    def handle_file(self, uploaded_file: UploadFile):
+        raise NotImplementedError
