@@ -1,6 +1,4 @@
-from base64 import b64encode
-from io import BytesIO
-from typing import Tuple
+from typing import BinaryIO, Tuple
 
 from fastapi import UploadFile
 from PIL import Image
@@ -41,7 +39,7 @@ class ImagePipeline(BasePipeline):
 
         return is_confidence_sufficient and is_density_sufficient
 
-    def _process_image(self, image_data: bytes) -> str:
+    def _process_image(self, image_file: BinaryIO) -> str:
         """
         Processes an image for subsequent embedding.
 
@@ -49,12 +47,12 @@ class ImagePipeline(BasePipeline):
         2. If no text is found, generate an image description using Gemini 2.0 Flash-Lite.
 
         Args:
-            image_data (bytes): Binary content of uploaded image.
+            image_file (BinaryIO): BinaryIO file-like object of the uploaded image.
 
         Returns:
             str: String containing the image contents or its description for subsequent embedding.
         """
-        im = Image.open(BytesIO(image_data))
+        im = Image.open(image_file)
 
         ocr_data = image_to_data(im, output_type=Output.DICT)
         im_text = image_to_string(im)
@@ -68,17 +66,29 @@ class ImagePipeline(BasePipeline):
         return description
 
     def handle_file(self, uploaded_file: UploadFile):
-        image_data = self._read_file(uploaded_file)
+        """
+        Handles the uploaded image file.
 
+        1. Extract image text using OCR / generate image description using vision LLM.
+        2. Create embeddings of extracted text / generated description.
+        3. Insert document (i.e., the image file) and embeddings entries into DB.
+
+        Args:
+            uploaded_file (UploadFile): The uploaded file.
+        """
         try:
             # Process the image to extract its text / generate a description for it
-            text = self._process_image(image_data)
+            text = self._process_image(uploaded_file.file)      # TODO: Does not successfully run in BackgroundTasks
+            self.logger.debug("Successfully processed image")
 
             contents, embeddings = self._create_embeddings(text)
+            self.logger.debug("Successfully created embeddings")
 
-            document_entry = self._insert_document()
+            document_entry = self._insert_document(uploaded_file.filename)
             document_id = document_entry["document_id"]
+            self.logger.debug("Successfully inserted document entry to database")
 
             response = self._insert_embeddings(document_id, contents, embeddings)
+            self.logger.debug("Successfully inserted embeddings entries to database")
         except RuntimeError as e:
-            self.logger.error(e)
+            self.logger.exception(e)

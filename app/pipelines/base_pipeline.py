@@ -44,9 +44,10 @@ class BasePipeline:
         self.supabase = get_supabase()
         self.logger = logging.getLogger(self.__class__.__name__)
 
-    def _read_file(self, uploaded_file: UploadFile):
-        data = uploaded_file.file.read()
-        uploaded_file.file.close()
+    async def _read_file(self, uploaded_file: UploadFile):
+        # Both file reads and closes are asynchronous
+        data = await uploaded_file.file.read()
+        await uploaded_file.file.close()
         return data
 
     def _invoke_model_with_retry(self, message: dict) -> AIMessage:
@@ -116,13 +117,14 @@ class BasePipeline:
         embeddings = self.embedding_model.embed_documents(contents)
         return contents, embeddings
 
-    def _insert_document(self) -> dict:
+    def _insert_document(self, filename: str) -> dict:
         try:
             response = (
                 self.supabase.table("documents")
                 .insert({
                     "uploader_id": self.uploader_id,
-                    "chatroom_id": self.chatroom_id
+                    "chatroom_id": self.chatroom_id,
+                    "filename": filename
                 })
                 .execute()
             )
