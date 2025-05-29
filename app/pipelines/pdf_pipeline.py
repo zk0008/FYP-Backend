@@ -1,6 +1,7 @@
+from os import remove
+from pathlib import PosixPath, WindowsPath
 from typing import List
 
-from fastapi import UploadFile
 from pymupdf import Document
 from pymupdf4llm import to_markdown
 
@@ -97,7 +98,7 @@ class PdfPipeline(BasePipeline):
         """
         return self._process_slide(pdf) if self._is_slide(pdf) else self._process_paper(pdf)
 
-    def handle_file(self, uploaded_file: UploadFile):
+    def handle_file(self, filename: str, path: PosixPath | WindowsPath):# uploaded_file: UploadFile):
         """
         Handles the uploaded PDF file.
 
@@ -106,10 +107,13 @@ class PdfPipeline(BasePipeline):
         3. Insert document (i.e., the PDF file) and embeddings entries into DB.
 
         Args:
-            uploaded_file (UploadFile): The uploaded file.
+            filename (str): Original
         """
+        
+
         try:
-            pdf = Document(stream=uploaded_file.file.read())        # TODO: Does not successfully run in BackgroundTasks; likely because read() is async
+            pdf = Document(path)
+            # pdf = Document(stream=uploaded_file.file.read())        # TODO: Does not successfully run in BackgroundTasks; likely because read() is async
 
             # Process the PDF to extract its text / generate descriptions for it
             text = self._process_pdf(pdf)                           # TODO: Untested, but likely does not successfully run in BackgroundTasks as well
@@ -118,7 +122,7 @@ class PdfPipeline(BasePipeline):
             contents, embeddings = self._create_embeddings(text)
             self.logger.debug("Successfully created embeddings")
 
-            document_entry = self._insert_document(uploaded_file.filename)
+            document_entry = self._insert_document(filename)
             document_id = document_entry["document_id"]
             self.logger.debug("Successfully inserted document entry to database")
 
@@ -126,3 +130,9 @@ class PdfPipeline(BasePipeline):
             self.logger.debug("Successfully inserted embeddings entries to database")
         except RuntimeError as e:
             self.logger.exception(e)
+        finally:
+            try:
+                remove(path)
+                self.logger.info("Successfully added PDF to knowledge base")
+            except Exception as e:
+                self.logger.exception(e)

@@ -1,6 +1,7 @@
-from typing import BinaryIO, Tuple
+from os import remove
+from typing import Tuple
+from pathlib import PosixPath, WindowsPath
 
-from fastapi import UploadFile
 from PIL import Image
 from pytesseract import image_to_string, image_to_data, Output
 
@@ -39,7 +40,7 @@ class ImagePipeline(BasePipeline):
 
         return is_confidence_sufficient and is_density_sufficient
 
-    def _process_image(self, image_file: BinaryIO) -> str:
+    def _process_image(self, image_path: PosixPath | WindowsPath) -> str:
         """
         Processes an image for subsequent embedding.
 
@@ -47,12 +48,12 @@ class ImagePipeline(BasePipeline):
         2. If no text is found, generate an image description using Gemini 2.0 Flash-Lite.
 
         Args:
-            image_file (BinaryIO): BinaryIO file-like object of the uploaded image.
+            image_path (PosixPath | WindowsPath): Path to uplaoded image.
 
         Returns:
             str: String containing the image contents or its description for subsequent embedding.
         """
-        im = Image.open(image_file)
+        im = Image.open(image_path)
 
         ocr_data = image_to_data(im, output_type=Output.DICT)
         im_text = image_to_string(im)
@@ -65,7 +66,7 @@ class ImagePipeline(BasePipeline):
         description = self._describe_image(image_b64_data)
         return description
 
-    def handle_file(self, uploaded_file: UploadFile):
+    def handle_file(self, filename: str, path: PosixPath | WindowsPath):
         """
         Handles the uploaded image file.
 
@@ -78,13 +79,13 @@ class ImagePipeline(BasePipeline):
         """
         try:
             # Process the image to extract its text / generate a description for it
-            text = self._process_image(uploaded_file.file)      # TODO: Does not successfully run in BackgroundTasks
+            text = self._process_image(path)
             self.logger.debug("Successfully processed image")
 
             contents, embeddings = self._create_embeddings(text)
             self.logger.debug("Successfully created embeddings")
 
-            document_entry = self._insert_document(uploaded_file.filename)
+            document_entry = self._insert_document(filename)
             document_id = document_entry["document_id"]
             self.logger.debug("Successfully inserted document entry to database")
 
@@ -92,3 +93,9 @@ class ImagePipeline(BasePipeline):
             self.logger.debug("Successfully inserted embeddings entries to database")
         except RuntimeError as e:
             self.logger.exception(e)
+        finally:
+            try:
+                remove(path)
+                self.logger.info("Successfully added image to knowledge base")
+            except Exception as e:
+                self.logger.exception(e)

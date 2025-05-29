@@ -1,29 +1,36 @@
+import logging
 from os.path import splitext
+from pathlib import Path
+import shutil
+from uuid import uuid4
 
 from fastapi import (
     APIRouter,
     BackgroundTasks,
-    Depends,
     File,
     Form,
-    HTTPException,
     status,
     UploadFile
 )
 from fastapi.responses import JSONResponse
 
-from app.dependencies import get_supabase
 from app.pipelines.image_pipeline import ImagePipeline
 from app.pipelines.pdf_pipeline import PdfPipeline
-
 
 router = APIRouter(
     prefix='/api/files',
     tags=['files'],
 )
 
+logger = logging.getLogger(__name__)
 
-# TODO: Test if def upload_file() allows background task to execute normally
+# Create tmp_files directory
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+TMP_FILES_DIR = PROJECT_ROOT / "tmp_files"
+TMP_FILES_DIR.mkdir(exist_ok=True)
+logger.info("Successfully created tmp_files directory")
+
+
 @router.post('/upload')
 async def upload_file(
     uploaded_file: UploadFile = File(...),
@@ -40,8 +47,14 @@ async def upload_file(
             content={"error": f"Exceeded 5 MB limit. Uploaded file size: {file_size_mb:.2f} MB"}
         )
 
-    filename = uploaded_file.filename
-    ext = splitext(filename)[1].lower()
+    original_filename = uploaded_file.filename
+    ext = splitext(original_filename)[1].lower()
+
+    # Save a copy of uploaded file to disk
+    tmp_filename = f"{uuid4().hex}{ext}"
+    tmp_filepath = TMP_FILES_DIR / tmp_filename
+    with open(tmp_filepath, "wb") as buffer:
+        shutil.copyfileobj(uploaded_file.file, buffer)
 
     if ext in [".pdf"]:
         pipeline = PdfPipeline(uploader_id=uploader_id, chatroom_id=chatroom_id)
@@ -56,8 +69,11 @@ async def upload_file(
             content={"error": f"Unsupported file type: {ext}"}
         )
 
-    pipeline.handle_file(uploaded_file)                         # Synchronous
-    # bg_tasks.add_task(pipeline.handle_file, uploaded_file)      # TODO: Asynchronous, but not working
+    bg_tasks.add_task(
+        pipeline.handle_file,
+        filename=original_filename,
+        path=tmp_filepath
+    )
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
