@@ -22,7 +22,7 @@ app = FastAPI(
     summary=settings.summary,
     description=settings.description
 )
-logging.info("Successfully started application")
+logger.info("Successfully started application")
 
 app.add_middleware(
     CORSMiddleware,
