@@ -1,5 +1,6 @@
 __pycache__
 logs/
+tmp_files/
 venv/
 
 .DS_Store
