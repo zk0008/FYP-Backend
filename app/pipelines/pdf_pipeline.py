@@ -113,10 +113,9 @@ class PdfPipeline(BasePipeline):
 
         try:
             pdf = Document(path)
-            # pdf = Document(stream=uploaded_file.file.read())        # TODO: Does not successfully run in BackgroundTasks; likely because read() is async
 
             # Process the PDF to extract its text / generate descriptions for it
-            text = self._process_pdf(pdf)                           # TODO: Untested, but likely does not successfully run in BackgroundTasks as well
+            text = self._process_pdf(pdf)
             self.logger.debug("Successfully processed PDF")
 
             contents, embeddings = self._create_embeddings(text)
