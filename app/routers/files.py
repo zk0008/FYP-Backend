@@ -23,6 +23,7 @@ router = APIRouter(
 )
 
 
+# TODO: Test if def upload_file() allows background task to execute normally
 @router.post('/upload')
 async def upload_file(
     uploaded_file: UploadFile = File(...),
