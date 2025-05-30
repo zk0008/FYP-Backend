@@ -6,8 +6,8 @@ import os
 from supabase import create_client, Client
 
 load_dotenv()
-url: str = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
-key: str = os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+url: str = os.environ.get("SUPABASE_URL")
+key: str = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 supabase: Client = create_client(url, key)
 embeddings = OpenAIEmbeddings()
 
@@ -31,7 +31,7 @@ def get_rag_answer(topic: str, query: str):
     print(f"Chunks found for query: {len(similar_texts)}")
     # Use the similar texts for question answering
     chain = load_qa_chain(
-        ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0), chain_type="stuff"
+        ChatOpenAI(model="gpt-4o-mini", temperature=0), chain_type="stuff"
     )
     return chain.invoke(
         {

@@ -7,11 +7,11 @@ import os
 from supabase import create_client, Client
 
 load_dotenv()
-url: str = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
-key: str = os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+url: str = os.environ.get("SUPABASE_URL")
+key: str = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 supabase: Client = create_client(url, key)
 embeddings = OpenAIEmbeddings()
-llm = ChatOpenAI()
+llm = ChatOpenAI(model="gpt-4o-mini")
 
 
 def download_pdf(topic: str, file_name: str):
