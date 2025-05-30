@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 import jwt
 
 from app.dependencies import get_settings
+# from app.dependences import get_supabase
 
 
 async def auth_middleware(request: Request, call_next) -> Response:
@@ -33,6 +34,9 @@ async def auth_middleware(request: Request, call_next) -> Response:
         settings = get_settings()
         token = auth_header.split(' ')[1]
         jwt.decode(token, settings.SUPABASE_JWT_SECRET_KEY, algorithms=['HS256'], audience='authenticated')     # Local token validation
+        # TODO: Switch local token validation out for proper validation with Supabase
+        # supabase = get_supabase()
+        # response = supabase.auth.get_user(token)
     except jwt.ExpiredSignatureError:
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
