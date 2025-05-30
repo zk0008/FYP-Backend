@@ -98,19 +98,19 @@ class PdfPipeline(BasePipeline):
         """
         return self._process_slide(pdf) if self._is_slide(pdf) else self._process_paper(pdf)
 
-    def handle_file(self, filename: str, path: PosixPath | WindowsPath):# uploaded_file: UploadFile):
+    def handle_file(self, document_id: str, filename: str, path: PosixPath | WindowsPath):
         """
         Handles the uploaded PDF file.
 
         1. Extract PDF text using PyMuPDF4LLM for research paper-type documents / generate slide descriptions using vision LLM.
         2. Create embeddings of extracted text / generated description.
-        3. Insert document (i.e., the PDF file) and embeddings entries into DB.
+        3. Insert document (i.e., the PDF file) and embeddings entries into the database (DB).
 
         Args:
-            filename (str): Original
+            document_id (str): UUID v4 of the document entry in the DB.
+            filename (str): Name of uploaded PDF file.
+            path (PosixPath | WindowsPath): Path to uploaded PDF file.
         """
-        
-
         try:
             pdf = Document(path)
 
@@ -121,8 +121,7 @@ class PdfPipeline(BasePipeline):
             contents, embeddings = self._create_embeddings(text)
             self.logger.debug("Successfully created embeddings")
 
-            document_entry = self._insert_document(filename)
-            document_id = document_entry["document_id"]
+            self._insert_document(document_id, filename)
             self.logger.debug("Successfully inserted document entry to database")
 
             response = self._insert_embeddings(document_id, contents, embeddings)

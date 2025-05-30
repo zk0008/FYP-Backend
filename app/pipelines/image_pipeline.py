@@ -48,7 +48,7 @@ class ImagePipeline(BasePipeline):
         2. If no text is found, generate an image description using Gemini 2.0 Flash-Lite.
 
         Args:
-            image_path (PosixPath | WindowsPath): Path to uplaoded image.
+            image_path (PosixPath | WindowsPath): Path to uplaoded image file.
 
         Returns:
             str: String containing the image contents or its description for subsequent embedding.
@@ -66,16 +66,18 @@ class ImagePipeline(BasePipeline):
         description = self._describe_image(image_b64_data)
         return description
 
-    def handle_file(self, filename: str, path: PosixPath | WindowsPath):
+    def handle_file(self, document_id: str, filename: str, path: PosixPath | WindowsPath):
         """
         Handles the uploaded image file.
 
         1. Extract image text using OCR / generate image description using vision LLM.
         2. Create embeddings of extracted text / generated description.
-        3. Insert document (i.e., the image file) and embeddings entries into DB.
+        3. Insert document (i.e., the image file) and embeddings entries into database (DB).
 
         Args:
-            uploaded_file (UploadFile): The uploaded file.
+            document_id (str): UUID v4 of the document entry in the DB.
+            filename (str): Name of uploaded image file.
+            path (PosixPath | WindowsPath): Path to uploaded image file.
         """
         try:
             # Process the image to extract its text / generate a description for it
@@ -85,11 +87,10 @@ class ImagePipeline(BasePipeline):
             contents, embeddings = self._create_embeddings(text)
             self.logger.debug("Successfully created embeddings")
 
-            document_entry = self._insert_document(filename)
-            document_id = document_entry["document_id"]
+            self._insert_document(document_id, filename)
             self.logger.debug("Successfully inserted document entry to database")
 
-            response = self._insert_embeddings(document_id, contents, embeddings)
+            self._insert_embeddings(document_id, contents, embeddings)
             self.logger.debug("Successfully inserted embeddings entries to database")
         except RuntimeError as e:
             self.logger.exception(e)

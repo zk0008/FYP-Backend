@@ -117,18 +117,19 @@ class BasePipeline:
         embeddings = self.embedding_model.embed_documents(contents)
         return contents, embeddings
 
-    def _insert_document(self, filename: str) -> dict:
+    def _insert_document(self, document_id: str, filename: str) -> dict:
         try:
             response = (
                 self.supabase.table("documents")
                 .insert({
+                    "document_id": document_id,
                     "uploader_id": self.uploader_id,
                     "chatroom_id": self.chatroom_id,
                     "filename": filename
                 })
                 .execute()
             )
-            return response.data[0]
+            return response
         except Exception as e:
             raise RuntimeError(f"Document entry insertion failed with error: {e}")
 

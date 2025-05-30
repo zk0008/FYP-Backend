@@ -49,9 +49,10 @@ async def upload_file(
 
     original_filename = uploaded_file.filename
     ext = splitext(original_filename)[1].lower()
+    document_id = uuid4()       # Generate random UUID v4 for document's DB entry
 
     # Save a copy of uploaded file to disk
-    tmp_filename = f"{uuid4().hex}{ext}"
+    tmp_filename = f"{document_id.hex}{ext}"
     tmp_filepath = TMP_FILES_DIR / tmp_filename
     with open(tmp_filepath, "wb") as buffer:
         shutil.copyfileobj(uploaded_file.file, buffer)
@@ -71,11 +72,15 @@ async def upload_file(
 
     bg_tasks.add_task(
         pipeline.handle_file,
+        document_id=str(document_id),
         filename=original_filename,
         path=tmp_filepath
     )
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content={"message": "File uploaded. Processing started."}
+        content={
+            "message": "File uploaded. Processing started.",
+            "document_id": str(document_id)
+        }
     )
