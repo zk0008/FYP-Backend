@@ -1,9 +1,7 @@
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
-import jwt
 
-from app.dependencies import get_settings
-# from app.dependences import get_supabase
+from app.dependencies import get_supabase
 
 
 async def auth_middleware(request: Request, call_next) -> Response:
@@ -13,39 +11,31 @@ async def auth_middleware(request: Request, call_next) -> Response:
     Args:
         request (Request): The request sent by the client.
     """
-    # Allow unauthenticated access to the root path
+    # Allow unauthenticated access to only the root path
     if request.url.path == "/":
         return await call_next(request)
 
     auth_header = request.headers.get("Authorization", None)
     if not auth_header:
         return JSONResponse(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             content={"error": "Missing Authorization header in request"}
         )
     
     if not auth_header.startswith("Bearer "):
         return JSONResponse(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             content={"error": "Invalid Authorization header format"}
         )
 
     try:
-        settings = get_settings()
         token = auth_header.split(' ')[1]
-        jwt.decode(token, settings.SUPABASE_JWT_SECRET_KEY, algorithms=['HS256'], audience='authenticated')     # Local token validation
-        # TODO: Switch local token validation out for proper validation with Supabase
-        # supabase = get_supabase()
-        # response = supabase.auth.get_user(token)
-    except jwt.ExpiredSignatureError:
+        supabase = get_supabase()
+        supabase.auth.get_user(token)       # JWT validation with Supabase
+    except Exception as e:
         return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"error": "Token expired"}
-        )
-    except jwt.InvalidTokenError:
-        return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"error": "Invalid token"}
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={"error": e.message}
         )
 
     response = await call_next(request)
