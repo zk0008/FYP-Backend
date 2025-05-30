@@ -44,7 +44,7 @@ async def upload_file(
     if file_size_mb > MAX_FILE_SIZE_MB:
         return JSONResponse(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            content={"error": f"Exceeded 5 MB limit. Uploaded file size: {file_size_mb:.2f} MB"}
+            content={"error": f"Exceeded {MAX_FILE_SIZE_MB} MB limit. Uploaded file size: {file_size_mb:.2f} MB"}
         )
 
     original_filename = uploaded_file.filename
