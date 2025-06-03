@@ -6,9 +6,9 @@ from dotenv import load_dotenv
 import os
 from supabase import create_client, Client
 
-from app.models.gpt import Chat, get_answer
-from app.models.pdf import get_pdf_answer
-from app.models.rag import get_rag_answer
+from app.deprecated.gpt import Chat, get_answer
+from app.deprecated.pdf import get_pdf_answer
+from app.deprecated.rag import get_rag_answer
 
 load_dotenv()
 url: str = os.environ.get('SUPABASE_URL')
