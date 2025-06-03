@@ -12,15 +12,12 @@ def get_settings() -> Settings:
     return Settings()
 
 
+@lru_cache
 def get_supabase() -> Client:
     settings = get_settings()
 
     supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
     return supabase
-
-
-def get_graph():
-    pass
 
 
 def get_openai_client():
