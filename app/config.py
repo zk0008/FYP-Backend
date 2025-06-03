@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_ROLE_KEY: str
     SUPABASE_JWT_SECRET_KEY: str
 
+    GROUPGPT_USER_ID: str
+
     ANTHROPIC_API_KEY: str
     GEMINI_API_KEY: str
     OPENAI_API_KEY: str
