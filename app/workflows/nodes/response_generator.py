@@ -36,6 +36,8 @@ class ResponseGenerator:
 
                 <instructions>
                 1. Use the conversation history to understand the context and flow of prior discussion.
+                  1.1. The conversation history consists of multiple users and you. You are the AI, while the users' messages are formatted as "<username>: <message_content>".
+                  1.2. You must keep track of the contexts of each individual user within the chatroom.
                 2. Reference information from the provided context and mention sources whenever used.
                   2.1. If a document was referenced, give the name of the referenced file and the similarity distance.
                   2.2. If a web search result was referenced, give the name and URL of the referenced site.
