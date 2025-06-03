@@ -11,6 +11,11 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from PIL import Image
 from tiktoken import encoding_for_model
 
+from app.constants import (
+    DEFAULT_CHUNK_SIZE,
+    DEFAULT_CHUNK_OVERLAP,
+    EMBEDDING_MODEL_NAME
+)
 from app.dependencies import get_supabase
 from app.llms import gemini_2_flash_lite
 from .components.parsers import img_desc_parser, img_desc_reparser
@@ -18,12 +23,10 @@ from .components.prompts import IMAGE_DESCRIPTION_PROMPT
 
 
 class BasePipeline:
-    DEFAULT_CHUNK_SIZE = 1000
-    DEFAULT_CHUNK_OVERLAP = 200
-    EMBEDDING_MODEL_NAME = "text-embedding-ada-002"
     MAX_RETRIES = 3
 
-    def __init__(self,
+    def __init__(
+        self,
         uploader_id: str,
         chatroom_id: str,
         chunk_size: int = DEFAULT_CHUNK_SIZE,
@@ -32,8 +35,8 @@ class BasePipeline:
         self.uploader_id = uploader_id
         self.chatroom_id = chatroom_id
 
-        self.embedding_model = OpenAIEmbeddings(model=self.EMBEDDING_MODEL_NAME)
-        self.encoding = encoding_for_model(self.EMBEDDING_MODEL_NAME)
+        self.embedding_model = OpenAIEmbeddings(model=EMBEDDING_MODEL_NAME)
+        self.encoding = encoding_for_model(EMBEDDING_MODEL_NAME)
 
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,

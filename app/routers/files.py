@@ -14,8 +14,7 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 
-from app.pipelines.image_pipeline import ImagePipeline
-from app.pipelines.pdf_pipeline import PdfPipeline
+from app.pipelines import ImagePipeline, PdfPipeline
 
 router = APIRouter(
     prefix='/api/files',
@@ -44,7 +43,7 @@ async def upload_file(
     if file_size_mb > MAX_FILE_SIZE_MB:
         return JSONResponse(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            content={"error": f"Exceeded {MAX_FILE_SIZE_MB} MB limit. Uploaded file size: {file_size_mb:.2f} MB"}
+            content={"message": f"Exceeded {MAX_FILE_SIZE_MB} MB limit. Uploaded file size: {file_size_mb:.2f} MB"}
         )
 
     original_filename = uploaded_file.filename
@@ -67,7 +66,7 @@ async def upload_file(
     else:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
-            content={"error": f"Unsupported file type: {ext}"}
+            content={"message": f"Unsupported file type: {ext}"}
         )
 
     bg_tasks.add_task(
