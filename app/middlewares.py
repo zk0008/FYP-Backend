@@ -19,13 +19,13 @@ async def auth_middleware(request: Request, call_next) -> Response:
     if not auth_header:
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"error": "Missing Authorization header in request"}
+            content={"message": "Missing Authorization header in request"}
         )
     
     if not auth_header.startswith("Bearer "):
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"error": "Invalid Authorization header format"}
+            content={"message": "Invalid Authorization header format"}
         )
 
     try:
@@ -35,7 +35,7 @@ async def auth_middleware(request: Request, call_next) -> Response:
     except Exception as e:
         return JSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,
-            content={"error": e.message}
+            content={"message": str(e)}
         )
 
     response = await call_next(request)

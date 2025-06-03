@@ -26,10 +26,10 @@ logger.info("Successfully started application")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['http://localhost:3000'],
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
-    allow_methods=['*'],
-    allow_headers=['*']
+    allow_methods=["*"],
+    allow_headers=["*"]
 )
 app.add_middleware(BaseHTTPMiddleware, dispatch=auth_middleware)
 
@@ -37,6 +37,6 @@ app.include_router(files.router)
 app.include_router(queries.router)
 
 
-@app.get('/')
+@app.get("/")
 async def root():
-    return {'message': 'Server is running'}
+    return {"message": "Server is running"}

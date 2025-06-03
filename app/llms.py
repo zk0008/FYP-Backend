@@ -1,8 +1,8 @@
 import logging
 
 from langchain.chat_models import init_chat_model
-from langchain_openai.chat_models.base import ChatOpenAI
 from langchain_google_vertexai.chat_models import ChatVertexAI
+from langchain_openai.chat_models.base import ChatOpenAI
 
 logger = logging.getLogger(__name__)
 
