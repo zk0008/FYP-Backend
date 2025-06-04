@@ -5,7 +5,7 @@ from typing import List, Tuple
 
 from fastapi import UploadFile
 from langchain_core.exceptions import OutputParserException
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from PIL import Image
@@ -53,7 +53,7 @@ class BasePipeline:
         await uploaded_file.file.close()
         return data
 
-    def _invoke_model_with_retry(self, message: dict) -> AIMessage:
+    def _invoke_model_with_retry(self, message: HumanMessage) -> AIMessage:
         for attempt in range(self.MAX_RETRIES):
             try:
                 response = gemini_2_flash_lite.invoke([message])
@@ -81,9 +81,8 @@ class BasePipeline:
         return encoded_str
 
     def _describe_image(self, image_b64_data: str, mime_type: str = "image/png") -> str:
-        message = {
-            "role": "user",
-            "content": [
+        message = HumanMessage(
+            content=[
                 {
                     "type": "text",
                     "text": IMAGE_DESCRIPTION_PROMPT
@@ -95,7 +94,7 @@ class BasePipeline:
                     "mime_type": mime_type
                 }
             ]
-        }
+        )
 
         try:
             response = self._invoke_model_with_retry(message)
@@ -135,7 +134,6 @@ class BasePipeline:
             return response
         except Exception as e:
             raise RuntimeError(f"Document entry insertion failed with error: {e}")
-
 
     def _insert_embeddings(self, document_id: str, contents: List[str], embeddings: List[List[float]]) -> dict:
         try:
