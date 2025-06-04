@@ -2,9 +2,10 @@ import logging
 from logging.config import dictConfig
 from pathlib import Path
 
-log_dir = Path(__file__).resolve().parent.parent / "logs"
-log_dir.mkdir(parents=True, exist_ok=True)
-log_file = log_dir / "app.log"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+LOG_DIR = PROJECT_ROOT / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+LOG_FILE = LOG_DIR / "app.log"
 
 LOGGING_CONFIG = {
     "version": 1,
@@ -26,7 +27,7 @@ LOGGING_CONFIG = {
             "class": "logging.handlers.TimedRotatingFileHandler",
             "level": "DEBUG",
             "formatter": "default",
-            "filename": str(log_file),
+            "filename": str(LOG_FILE),
             "when": "midnight",
             "interval": 1,
             "backupCount": 3
