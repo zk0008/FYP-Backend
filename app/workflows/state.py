@@ -1,4 +1,5 @@
-from typing import Dict, List, TypedDict
+import operator
+from typing import Annotated, Dict, List, TypedDict
 from langchain_core.messages import AIMessage, HumanMessage
 
 
@@ -10,8 +11,10 @@ class ChatState(TypedDict):
     chatroom_id: str            # Unique identifier for the chatroom, for fetching history
     original_query: str         # Original query sent by the user
     rewritten_query: str        # LLM-rewritten query
-    chat_history: List[AIMessage | HumanMessage]
-    document_chunks: List[Dict[str, str | float]]  # "filename": str, "content": str, "distance": float
+    chat_history: Annotated[List[AIMessage | HumanMessage], operator.add]
+    # "filename": str, "content": str, "distance": float
+    document_chunks: Annotated[List[Dict[str, str | float]], operator.add]
     needs_web_search: bool      # Whether chat_history and document_chunks are sufficient to generate a response to user's query
-    web_results: List[Dict[str, str]]  # "title": str, "url": str, "snippet": str
-    final_response: str
+    # "title": str, "url": str, "snippet": str
+    web_results: List[Dict[str, str]]
+    final_response: str         # Final response to be returned to the user

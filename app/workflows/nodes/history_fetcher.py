@@ -58,5 +58,4 @@ class HistoryFetcher:
         except Exception as e:
             self.logger.exception(e)
 
-        state["chat_history"] = chat_history
-        return state
+        return {"chat_history": chat_history}

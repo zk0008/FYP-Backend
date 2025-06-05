@@ -36,5 +36,4 @@ class ChunkRetriever:
         except Exception as e:
             self.logger.exception(e)
 
-        state["document_chunks"] = document_chunks
-        return state
+        return {"document_chunks": document_chunks}
