@@ -47,14 +47,17 @@ class GroupGPTGraph:
         # Define workflow steps
         workflow.add_edge(START, "query_rewriter")
 
-        # TODO: Implement parallel execution of independent nodes
-        # workflow.add_edge("query_rewriter", "history_fetcher")
-        # workflow.add_edge("query_rewriter", "chunk_retriever")
-        # workflow.add_edge("history_fetcher", "response_generator")
-
+        # Parallel execution
         workflow.add_edge("query_rewriter", "history_fetcher")
-        workflow.add_edge("history_fetcher", "chunk_retriever")
+        workflow.add_edge("query_rewriter", "chunk_retriever")
+        workflow.add_edge("history_fetcher", "response_generator")
         workflow.add_edge("chunk_retriever", "response_generator")
+
+        # # Sequential execution
+        # workflow.add_edge("query_rewriter", "history_fetcher")
+        # workflow.add_edge("history_fetcher", "chunk_retriever")
+        # workflow.add_edge("chunk_retriever", "response_generator")
+        
         workflow.add_edge("response_generator", END)
 
         return workflow.compile()

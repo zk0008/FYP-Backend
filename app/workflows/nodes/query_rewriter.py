@@ -52,5 +52,4 @@ class QueryRewriter:
             self.logger.exception(e)
             rewritten_query = original_query
 
-        state["rewritten_query"] = rewritten_query
-        return state
+        return {"rewritten_query": rewritten_query}
