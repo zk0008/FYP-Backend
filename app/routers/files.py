@@ -78,8 +78,5 @@ async def upload_file(
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content={
-            "message": "File uploaded. Processing started.",
-            "document_id": str(document_id)
-        }
+        content={"message": "File uploaded. Processing started."}
     )
