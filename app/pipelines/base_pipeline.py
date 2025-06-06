@@ -1,6 +1,7 @@
 from base64 import b64encode
 from io import BytesIO
 import logging
+from pathlib import PosixPath, WindowsPath
 from typing import List, Tuple
 
 from fastapi import UploadFile
@@ -157,5 +158,21 @@ class BasePipeline:
         except Exception as e:
             raise RuntimeError(f"Chunk entry insertion failed with error: {e}")
 
-    def handle_file(self, uploaded_file: UploadFile):
+    def _upload_file_to_supabase(self, filename: str, path: PosixPath | WindowsPath) -> dict:
+        try:
+            with open(path, "rb") as f:
+                response = (
+                    self.supabase.storage
+                    .from_("uploaded-files")  # Name of bucket
+                    .upload(
+                        file=f,
+                        path=f"{self.chatroom_id}/{filename}"
+                    )
+                )
+
+            return response
+        except Exception as e:
+            raise RuntimeError(f"File upload to Supabase bucket failed with error: {e}")
+
+    def handle_file(self, document_id: str, filename: str, path: PosixPath | WindowsPath):
         raise NotImplementedError

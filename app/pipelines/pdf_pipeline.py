@@ -124,8 +124,11 @@ class PdfPipeline(BasePipeline):
             self._insert_document(document_id, filename)
             self.logger.debug("Successfully inserted document entry to database")
 
-            response = self._insert_embeddings(document_id, contents, embeddings)
+            self._insert_embeddings(document_id, contents, embeddings)
             self.logger.debug("Successfully inserted embeddings entries to database")
+
+            self._upload_file_to_supabase(filename, path)
+            self.logger.debug("Successfully uploaded file to Supabase bucket")
         except RuntimeError as e:
             self.logger.exception(e)
         finally:
