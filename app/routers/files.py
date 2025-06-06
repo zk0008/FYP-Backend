@@ -14,6 +14,7 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 
+from app.constants import MAX_FILE_SIZE_MB
 from app.pipelines import ImagePipeline, PdfPipeline
 
 router = APIRouter(
@@ -37,7 +38,6 @@ async def upload_file(
     chatroom_id: str = Form(...),
     bg_tasks: BackgroundTasks = BackgroundTasks()
 ):
-    MAX_FILE_SIZE_MB = 5
     file_size_mb = uploaded_file.size / 1_000_000
 
     if file_size_mb > MAX_FILE_SIZE_MB:
