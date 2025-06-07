@@ -163,7 +163,7 @@ class BasePipeline:
             with open(path, "rb") as f:
                 response = (
                     self.supabase.storage
-                    .from_("uploaded-files")  # Name of bucket
+                    .from_("uploaded-documents")  # Name of bucket
                     .upload(
                         file=f,
                         path=f"{self.chatroom_id}/{filename}"
