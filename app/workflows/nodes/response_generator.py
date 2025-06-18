@@ -25,7 +25,7 @@ class ResponseGenerator:
         """
         chunks_text = "None"        # Default to "None"
         if document_chunks:
-            chunks_text = "\n\n".join([f"From {chunk["filename"]} with distance {chunk["distance"]}:\n{chunk["content"]}"
+            chunks_text = "\n\n".join([f"From {chunk["filename"]} with RRF score {round(chunk["rrf_score"], 3)}:\n{chunk["content"]}"
                                        for chunk in document_chunks])
 
         # TODO: Web search results
@@ -36,19 +36,40 @@ class ResponseGenerator:
 
                 <instructions>
                 1. Use the conversation history to understand the context and flow of prior discussion.
-                  1.1. The conversation history consists of multiple users and you. You are the AI, while the users' messages are formatted as "<username>: <message_content>".
-                  1.2. You must keep track of the contexts of each individual user within the chatroom.
-                2. Reference information from the provided context and mention sources whenever used.
-                  2.1. If a document was referenced, give the name of the referenced file and the similarity distance.
-                  2.2. If a web search result was referenced, give the name and URL of the referenced site.
-                3. Keep the tone conversational and appropriate for a group chat.
-                4. If the context does not contain enough information, let the user know.
-                5. Format your response clearly and concisely.
+                1.1. The conversation history consists of multiple users and you. You are the AI, while the users' messages are formatted as "{{username}}: {{message_content}}".
+                1.2. You must keep track of the contexts of each individual user within the chatroom.
+
+                2. **MANDATORY SOURCE CITATION**: You MUST cite sources for ANY factual claims, data, or information that comes from the provided context.
+                2.1. For document references: Use format "[{{filename}}]" immediately after the relevant information.
+                2.2. For web search results: Use format "[{{site_name}} - {{url}}]" immediately after the relevant information.
+                2.3. If you reference multiple sources in one response, cite each one separately.
+                2.4. Do NOT provide information from the context without proper citation.
+
+                3. Keep the tone conversational and appropriate for a group chat, but never omit required citations.
+
+                4. If the context does not contain enough information to answer the query, explicitly state this and suggest what additional information might be needed.
+
+                5. Format your response clearly and concisely, ensuring citations are easily identifiable.
+
+                **CRITICAL**: Every piece of information derived from the provided context MUST include a citation. Failure to cite sources when using contextual information is not acceptable.
                 </instructions>
 
                 <document_chunks>
+                The following document chunks are formatted as "From {{filename}} with RRF score {{score}}:" followed by the content.
+                Use the filename from each chunk header for your citations.
+
                 {chunks_text}
                 </document_chunks>
+
+                <citation_examples>
+                Good examples:
+                - "According to the quarterly report, sales increased by 15% [Q3_Report.pdf]"
+                - "The latest research shows that remote work productivity has improved [Harvard Business Review - https://hbr.org/remote-work-study]"
+
+                Bad examples:
+                - "According to the quarterly report, sales increased by 15%" (missing citation)
+                - "Sales increased by 15% (from Q3 report)" (improper citation format)
+                </citation_examples>
             """
         )
 

@@ -5,7 +5,7 @@ from langgraph.graph import END, START, StateGraph
 
 from app.constants import EMBEDDING_MODEL_NAME
 from app.dependencies import get_supabase
-from app.llms import gemini_2_flash_lite, gpt_41_nano
+from app.llms import gemini_2_flash_lite, gemini_25_flash
 from .nodes import (
     ChunkRetriever,
     HistoryFetcher,
@@ -25,7 +25,7 @@ class GroupGPTGraph:
         self.chunk_retriever = ChunkRetriever(supabase=self.supabase, embedding_model=self.embedding_model)
         self.history_fetcher = HistoryFetcher(supabase=self.supabase)
         self.query_rewriter = QueryRewriter(llm=gemini_2_flash_lite)
-        self.response_generator = ResponseGenerator(supabase=self.supabase, llm=gpt_41_nano)
+        self.response_generator = ResponseGenerator(supabase=self.supabase, llm=gemini_25_flash)
 
         # Build graph
         self.graph = self._build_graph()

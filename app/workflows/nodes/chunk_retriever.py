@@ -23,9 +23,10 @@ class ChunkRetriever:
         try:
             query_embedding = self.embedding_model.embed_query(query_text)
             response = (
-                self.supabase.rpc("get_similar_embeddings_v2", {
+                self.supabase.rpc("hybrid_search", {
                     "p_chatroom_id": chatroom_id,
                     "query_embedding": query_embedding,
+                    "search_query": query_text,
                     "match_count": self.num_relevant_chunks
                 })
                 .execute()

@@ -15,4 +15,6 @@ def safe_init_chat_model(model_name: str, temperature: float = 0) -> ChatOpenAI 
         return None
 
 gemini_2_flash_lite = safe_init_chat_model("gemini-2.0-flash-lite")
+gemini_25_flash = safe_init_chat_model("gemini-2.5-flash")
+
 gpt_41_nano = safe_init_chat_model("gpt-4.1-nano")
