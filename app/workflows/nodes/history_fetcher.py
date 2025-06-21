@@ -1,4 +1,3 @@
-# TODO: Fetch conversation history from database
 import logging
 
 from langchain_core.messages import AIMessage, HumanMessage
@@ -24,8 +23,8 @@ class HistoryFetcher:
                 .execute()
             )
 
-            # Exclude last message for now, which is the latest message sent by the user to invoke GroupGPT
-            messages = response.data[:-1]
+            # # Exclude last message for now, which is the latest message sent by the user to invoke GroupGPT
+            messages = response.data
             chat_history = []
 
             # Users' and GroupGPT's messages are separated
@@ -50,7 +49,7 @@ class HistoryFetcher:
 
 
             # Include last message, which is user's rewritten query, to remaining user messages
-            current_user_messages.append(f"{state["username"]}: {state["rewritten_query"]}")
+            # current_user_messages.append(f"{state["username"]}: {state["rewritten_query"]}")
             combined_user_messages = "\n".join(current_user_messages)
             chat_history.append(HumanMessage(content=combined_user_messages))
 

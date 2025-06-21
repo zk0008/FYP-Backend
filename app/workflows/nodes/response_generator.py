@@ -108,7 +108,7 @@ class ResponseGenerator:
         messages.append(self.system_message)
 
         if chat_history:
-            messages.extend(chat_history)       # Includes the user's rewritten query
+            messages.extend(chat_history)
 
         try:
             response = self.llm.invoke(messages)

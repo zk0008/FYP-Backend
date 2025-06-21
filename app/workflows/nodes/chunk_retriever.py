@@ -1,7 +1,5 @@
 import logging
 
-# TODO: Possible integration with SupabaseVectorStore
-# from langchain_community.vectorstores import SupabaseVectorStore
 from langchain_openai import OpenAIEmbeddings
 from supabase import Client
 
@@ -16,7 +14,7 @@ class ChunkRetriever:
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def __call__(self, state: ChatState) -> ChatState:
-        query_text = state["rewritten_query"]
+        query_text = state["query"]
         chatroom_id = state["chatroom_id"]
         document_chunks = []
 

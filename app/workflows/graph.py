@@ -9,7 +9,6 @@ from app.llms import gemini_2_flash_lite, gemini_25_flash
 from .nodes import (
     ChunkRetriever,
     HistoryFetcher,
-    QueryRewriter,
     ResponseGenerator
 )
 from .state import ChatState
@@ -24,7 +23,6 @@ class GroupGPTGraph:
         # Initialize nodes
         self.chunk_retriever = ChunkRetriever(supabase=self.supabase, embedding_model=self.embedding_model)
         self.history_fetcher = HistoryFetcher(supabase=self.supabase)
-        self.query_rewriter = QueryRewriter(llm=gemini_2_flash_lite)
         self.response_generator = ResponseGenerator(supabase=self.supabase, llm=gemini_25_flash)
 
         # Build graph
@@ -41,23 +39,14 @@ class GroupGPTGraph:
         # Add nodes
         workflow.add_node("chunk_retriever", self.chunk_retriever)
         workflow.add_node("history_fetcher", self.history_fetcher)
-        workflow.add_node("query_rewriter", self.query_rewriter)
         workflow.add_node("response_generator", self.response_generator)
 
         # Define workflow steps
-        workflow.add_edge(START, "query_rewriter")
-
-        # Parallel execution
-        workflow.add_edge("query_rewriter", "history_fetcher")
-        workflow.add_edge("query_rewriter", "chunk_retriever")
+        # Parallel execution of fetching chat history and retrieving relevant chunks
+        workflow.add_edge(START, "history_fetcher")
+        workflow.add_edge(START, "chunk_retriever")
         workflow.add_edge("history_fetcher", "response_generator")
         workflow.add_edge("chunk_retriever", "response_generator")
-
-        # # Sequential execution
-        # workflow.add_edge("query_rewriter", "history_fetcher")
-        # workflow.add_edge("history_fetcher", "chunk_retriever")
-        # workflow.add_edge("chunk_retriever", "response_generator")
-        
         workflow.add_edge("response_generator", END)
 
         return workflow.compile()
@@ -66,8 +55,7 @@ class GroupGPTGraph:
         initial_state = ChatState(
             username=username,
             chatroom_id=chatroom_id,
-            original_query=content,
-            rewritten_query="",
+            query=content,
             chat_history=[],
             document_chunks=[],
             needs_web_search=False,

@@ -9,8 +9,7 @@ class ChatState(TypedDict):
     """
     username: str               # Username of the user who sent the message
     chatroom_id: str            # Unique identifier for the chatroom, for fetching history
-    original_query: str         # Original query sent by the user
-    rewritten_query: str        # LLM-rewritten query
+    query: str         # Query sent by the user
     chat_history: Annotated[List[AIMessage | HumanMessage], operator.add]
     # "filename": str, "content": str, "distance": float
     document_chunks: Annotated[List[Dict[str, str | float]], operator.add]
