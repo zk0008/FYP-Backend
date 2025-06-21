@@ -1,9 +1,12 @@
+import concurrent.futures
 from os import remove
 from pathlib import PosixPath, WindowsPath
 from typing import List
 
 from pymupdf import Document
 from pymupdf4llm import to_markdown
+
+from app.constants import MAX_WORKERS
 
 from .base_pipeline import BasePipeline
 
@@ -67,20 +70,33 @@ class PdfPipeline(BasePipeline):
         Returns:
             List[str]: List of strings containing the descriptions of every page.
         """
-        texts = []
-        for i, page in enumerate(pdf, start=1):
-            pixmap = page.get_pixmap()
-            im = pixmap.pil_image()
-
-            image_b64_data = self._encode_pil_image_to_base64(im)
+        def process_single_page(page_data):
+            page, page_num = page_data
             try:
+                pixmap = page.get_pixmap()
+                im = pixmap.pil_image()
+                image_b64_data = self._encode_pil_image_to_base64(im)
                 text = self._describe_image(image_b64_data)
-                texts.append(text)
+                return page_num, text
             except RuntimeError as e:
-                self.logger.error(f"Error occurred when generating descriptions for page {i}: {e}")
-                continue
+                self.logger.error(f"Error occurred when generating descriptions for page {page_num}: {e}")
+                return page_num, None
+        
+        # Prepare page data with page numbers
+        page_data = [(page, i) for i, page in enumerate(pdf, start=1)]
+        
+        texts = [None] * len(page_data)  # Pre-allocated to maintain order
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            future_to_page = {executor.submit(process_single_page, data): data for data in page_data}
 
-        return texts
+            for future in concurrent.futures.as_completed(future_to_page):
+                page_num, result = future.result()
+                if result is not None:
+                    texts[page_num - 1] = result
+
+        # Filter out failed pages (None values)
+        return [text for text in texts if text is not None]
 
     def _process_pdf(self, pdf: Document) -> List[str] | str:
         """
