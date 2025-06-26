@@ -11,7 +11,7 @@ class HistoryFetcher:
         self.supabase = supabase
         self.logger = logging.getLogger(self.__class__.__name__)
 
-    def __call__(self, state: ChatState) -> ChatState:
+    def __call__(self, state: ChatState) -> dict:
         """
         Fetches conversation history from Supabase database.
         """

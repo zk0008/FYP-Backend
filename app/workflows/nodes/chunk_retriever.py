@@ -13,7 +13,7 @@ class ChunkRetriever:
         self.num_relevant_chunks = num_relevant_chunks
         self.logger = logging.getLogger(self.__class__.__name__)
 
-    def __call__(self, state: ChatState) -> ChatState:
+    def __call__(self, state: ChatState) -> dict:
         query_text = state["query"]
         chatroom_id = state["chatroom_id"]
         document_chunks = []

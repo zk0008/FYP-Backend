@@ -13,6 +13,7 @@ class ChatState(TypedDict):
     chat_history: Annotated[List[AIMessage | HumanMessage], operator.add]
     # "filename": str, "content": str, "distance": float
     document_chunks: Annotated[List[Dict[str, str | float]], operator.add]
+    chunk_summaries: Annotated[List[Dict[str, str | float]], operator.add]
     needs_web_search: bool      # Whether chat_history and document_chunks are sufficient to generate a response to user's query
     # "title": str, "url": str, "snippet": str
     web_results: List[Dict[str, str]]
