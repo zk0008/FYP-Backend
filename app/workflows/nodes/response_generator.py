@@ -16,17 +16,14 @@ class ResponseGenerator:
         self.llm = llm
         self.logger = logging.getLogger(self.__class__.__name__)
 
-    def _build_system_message(
-        self,
-        document_chunks: List[Dict[str, str | float]]
-    ) -> None:
+    def _build_system_message(self, chunk_summaries: List[Dict[str, str | float]]) -> None:
         """
         Build system message with context information from retrieved chunks.
         """
         chunks_text = "None"        # Default to "None"
-        if document_chunks:
-            chunks_text = "\n\n".join([f"From {chunk["filename"]} with RRF score {round(chunk["rrf_score"], 3)}:\n{chunk["content"]}"
-                                       for chunk in document_chunks])
+        if chunk_summaries:
+            chunks_text = "\n\n".join([f"From {chunk.filename} with RRF score {round(chunk.rrf_score, 3)}:\n{chunk.content}"
+                                       for chunk in chunk_summaries])
 
         # TODO: Web search results
 
@@ -98,10 +95,10 @@ class ResponseGenerator:
         Generates the final response using all available information.
         """
         chat_history = state.get("chat_history", [])
-        document_chunks = state.get("document_chunks", [])
+        chunk_summaries = state.get("chunk_summaries", [])
         # web_results = state.get("web_results", [])
 
-        self._build_system_message(document_chunks)
+        self._build_system_message(chunk_summaries)
 
         # Build message sequence
         messages = []

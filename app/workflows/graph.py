@@ -8,6 +8,7 @@ from app.dependencies import get_supabase
 from app.llms import gemini_2_flash_lite, gemini_25_flash
 from .nodes import (
     ChunkRetriever,
+    ChunkSummarizer,
     HistoryFetcher,
     ResponseGenerator
 )
@@ -22,6 +23,7 @@ class GroupGPTGraph:
 
         # Initialize nodes
         self.chunk_retriever = ChunkRetriever(supabase=self.supabase, embedding_model=self.embedding_model)
+        self.chunk_summarizer = ChunkSummarizer(llm=gemini_25_flash)
         self.history_fetcher = HistoryFetcher(supabase=self.supabase)
         self.response_generator = ResponseGenerator(supabase=self.supabase, llm=gemini_25_flash)
 
@@ -38,15 +40,19 @@ class GroupGPTGraph:
 
         # Add nodes
         workflow.add_node("chunk_retriever", self.chunk_retriever)
+        workflow.add_node("chunk_summarizer", self.chunk_summarizer)
         workflow.add_node("history_fetcher", self.history_fetcher)
-        workflow.add_node("response_generator", self.response_generator)
+        workflow.add_node("response_generator", self.response_generator, defer=True)
 
         # Define workflow steps
         # Parallel execution of fetching chat history and retrieving relevant chunks
         workflow.add_edge(START, "history_fetcher")
         workflow.add_edge(START, "chunk_retriever")
+
+        workflow.add_edge("chunk_retriever", "chunk_summarizer")
+
         workflow.add_edge("history_fetcher", "response_generator")
-        workflow.add_edge("chunk_retriever", "response_generator")
+        workflow.add_edge("chunk_summarizer", "response_generator")
         workflow.add_edge("response_generator", END)
 
         return workflow.compile()
@@ -58,6 +64,7 @@ class GroupGPTGraph:
             query=content,
             chat_history=[],
             document_chunks=[],
+            document_summaries=[],
             needs_web_search=False,
             web_results=[],
             final_response=""
