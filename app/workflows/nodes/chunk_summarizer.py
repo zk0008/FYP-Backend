@@ -43,14 +43,12 @@ class ChunkSummarizer:
 
     def __call__(self, state: ChatState) -> dict:
         document_chunks = state["document_chunks"]
+        if not document_chunks:
+            return {"chunk_summaries": []}
+
         query = state["query"]
-        
-        chunks_text = "None"
-        if document_chunks:
-            chunks_text = "\n\n".join([f"From {chunk["filename"]} with RRF score {round(chunk["rrf_score"], 3)}:\n{chunk["content"]}"
-                                       for chunk in document_chunks])
-        else:
-            return {"chunk_summaries": None}
+        chunks_text = "\n\n".join([f"From {chunk["filename"]} with RRF score {round(chunk["rrf_score"], 3)}:\n{chunk["content"]}"
+                                    for chunk in document_chunks])
 
         try:
             response = self.llm.invoke([

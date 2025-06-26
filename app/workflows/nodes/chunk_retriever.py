@@ -16,7 +16,6 @@ class ChunkRetriever:
     def __call__(self, state: ChatState) -> dict:
         query_text = state["query"]
         chatroom_id = state["chatroom_id"]
-        document_chunks = []
 
         try:
             query_embedding = self.embedding_model.embed_query(query_text)
@@ -29,10 +28,11 @@ class ChunkRetriever:
                 })
                 .execute()
             )
-            document_chunks.extend(response.data)
+            document_chunks = response.data
 
             self.logger.debug("Successfully retrieved relevant chunks")
         except Exception as e:
             self.logger.exception(e)
+            document_chunks = []
 
         return {"document_chunks": document_chunks}
