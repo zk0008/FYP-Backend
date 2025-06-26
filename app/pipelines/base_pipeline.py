@@ -48,12 +48,6 @@ class BasePipeline:
         self.supabase = get_supabase()
         self.logger = logging.getLogger(self.__class__.__name__)
 
-    async def _read_file(self, uploaded_file: UploadFile):
-        # Both file reads and closes are asynchronous
-        data = await uploaded_file.file.read()
-        await uploaded_file.file.close()
-        return data
-
     def _invoke_model_with_retry(self, message: HumanMessage) -> AIMessage:
         for attempt in range(self.MAX_RETRIES):
             try:
@@ -107,18 +101,25 @@ class BasePipeline:
         except Exception as e:
             raise RuntimeError(f"Image description failed with error: {e}")
 
-    def _create_embeddings(self, text: str | List[str]) -> Tuple[List[str], List[List[float]]]:
-        contents = []        # Chunked text contents for subsequent embedding
-        if isinstance(text, str):
-            contents = self.text_splitter.split_text(text)
-        elif isinstance(text, list):
-            for item in text:
-                item_chunks = self.text_splitter.split_text(item)
-                contents.extend(item_chunks)
+    def _create_embeddings(self, text: str) -> Tuple[List[str], List[List[float]]]:
+        # Split text into chunks for subsequent embedding
+        contents = self.text_splitter.split_text(text)
 
-        # Create corresponding embedding chunks
+        # Create embeddings for each of the text chunks
         embeddings = self.embedding_model.embed_documents(contents)
+
         return contents, embeddings
+        # contents = []        # Chunked text contents for subsequent embedding
+        # if isinstance(text, str):
+        #     contents = self.text_splitter.split_text(text)
+        # elif isinstance(text, list):
+        #     for item in text:
+        #         item_chunks = self.text_splitter.split_text(item)
+        #         contents.extend(item_chunks)
+
+        # # Create corresponding embedding chunks
+        # embeddings = self.embedding_model.embed_documents(contents)
+        # return contents, embeddings
 
     def _insert_document(self, document_id: str, filename: str) -> dict:
         try:

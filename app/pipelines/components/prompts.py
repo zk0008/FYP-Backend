@@ -29,3 +29,27 @@ Here is the output schema:
 ```
 </format>
 """
+
+SLIDE_EXTRACTION_PROMPT = """
+Your task is to accurately extract all content from the provided slide deck into Markdown format.
+
+<instructions>
+1. Focus on structure and hierarchy.
+    1.1. Each slide must be clearly separated. Use a distinct Markdown heading (e.g., `## Slide {{X}}: {{Title}}`) for each slide.
+    1.2. Maintain logical flow and hierarchy of information presented on each slide.
+    1.3. Preserve the order of slides as they appear in the original deck.
+2. Handling different content types:
+    2.1. Titles and Headings: Extract all slide titles, section titles, and subheadings, and convert them to the appropriate Markdown headings.
+    2.2. Body Text: Extract all prose and paragraph text.
+    2.3. Bullet Points and Numbered Lists: Convert all lists to standard Markdown bullet points or numbered lists where required. Preserve nesting levels accurately.
+    2.4. Tables: Convert all tables to Markdown table syntax. Ensure column headers and row data are correctly aligned and formatted. If a table is too complex for simple Markdown, describe its contents accurately.
+    2.5. Code Blocks: Identify and extract any code snippets. Enclose them in Markdown code blocks with the correct language specified.
+    2.6. Images or Figures: Give a short description of the image and represent it using a callout (e.g., `> Image Description: {{description}}`).
+    2.7. Emphasis: Convert bold text to **bold** and italic text to *italic*.
+</instructions>
+
+<formatting>
+You must begin your response with a hash: #
+The top level heading, denoted with a single hash, must contain the presentation title.
+</formatting>
+"""

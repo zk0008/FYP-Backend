@@ -1,19 +1,23 @@
 import concurrent.futures
 from os import remove
+import os.path as osp
 from pathlib import PosixPath, WindowsPath
-from typing import List
+import re
+from typing import Optional, List, Tuple
 
-from pymupdf import Document
+import pymupdf
 from pymupdf4llm import to_markdown
 
 from app.constants import MAX_WORKERS
+from app.llms import google_client
 
 from .base_pipeline import BasePipeline
+from .components.prompts import SLIDE_EXTRACTION_PROMPT
 
 class PdfPipeline(BasePipeline):
     CHAR_DENSITY_THRESHOLD_PER_SQPT = 0.004
 
-    def _get_avg_char_density(self, pdf: Document) -> float:
+    def _get_avg_char_density(self, pdf: pymupdf.Document) -> float:
         """
         Gets the average character density in characters per square point across all pages of a PDF document.
 
@@ -34,71 +38,140 @@ class PdfPipeline(BasePipeline):
 
         return avg_char_density
 
-    def _is_slide(self, pdf: Document) -> bool:
+    def _is_slide(self, filepath: str) -> bool:
         """
-        Determines if the input PDF document is a slide deck or a research paper.
+        Determines if the input document is a slide deck-type or a paper-type PDF.
 
         Args:
-            pdf (Document): Document object of the input PDF document.
+            filepath (str): Path to input PDF.
 
         Returns:
-            bool: Boolean indicating if the input PDF document is a slide deck.
+            bool: Boolean indicating if the input PDF document is a slide deck-type PDF.
         """
+        pdf = pymupdf.open(filepath)
         avg_char_density = self._get_avg_char_density(pdf)
         return avg_char_density < self.CHAR_DENSITY_THRESHOLD_PER_SQPT
 
-    def _process_paper(self, pdf: Document) -> str:
+    def _replace_images_with_descriptions(self, markdown_content: str, max_workers: int = 5) -> str:
         """
-        Processes a research paper by extracting text in Markdown format.
+        Replaces base64 encodings of embedded images with an LLM-generated image description.
 
         Args:
-            pdf (Document): Document object of the input PDF document.
+            markdown_content (str): Extracted contents in Markdown containing the embedded images.
+            max_workers (int): Defaults to 5. Maximum number of workers to generate image descriptions in parallel.
 
         Returns:
-            str: String containing the extracted text in Markdown format.
+            str: Extracted contents in Markdown with base64 encodings of embedded images being replaced with their respective descriptions.
         """
-        text = to_markdown(pdf)
-        return text
+        # First step: Extract all base64 encodings of embedded images
+        pattern = r"!\[\]\(data:(image/[^;]+);base64,([A-Za-z0-9+/=\s]+)\)"
+        matches = re.findall(pattern, markdown_content)
 
-    def _process_slide(self, pdf: Document) -> List[str]:
-        """
-        Processes a slide deck by generating descriptions for every individual slide's contents.
+        if not matches:
+            return markdown_content
 
-        Args:
-            pdf (Document): Document object of the input document.
+        # Second step: Generate descriptions for every image
+        image_data = [(i, mime, b64_data) for i, (mime, b64_data) in enumerate(matches)]
+        descriptions = [None] * len(image_data) # Pre-allocated to maintain order
 
-        Returns:
-            List[str]: List of strings containing the descriptions of every page.
-        """
-        def process_single_page(page_data):
-            page, page_num = page_data
+        def process_single_image(image_data: Tuple[int, str, str]) -> Tuple[int, Optional[str]]:
+            """
+            """
+            index, mime_type, image_b64_data = image_data
             try:
-                pixmap = page.get_pixmap()
-                im = pixmap.pil_image()
-                image_b64_data = self._encode_pil_image_to_base64(im)
-                text = self._describe_image(image_b64_data)
-                return page_num, text
-            except RuntimeError as e:
-                self.logger.error(f"Error occurred when generating descriptions for page {page_num}: {e}")
-                return page_num, None
-        
-        # Prepare page data with page numbers
-        page_data = [(page, i) for i, page in enumerate(pdf, start=1)]
-        
-        texts = [None] * len(page_data)  # Pre-allocated to maintain order
-        
-        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-            future_to_page = {executor.submit(process_single_page, data): data for data in page_data}
+                description = self._describe_image(image_b64_data=image_b64_data, mime_type=mime_type)
+                return index, description
+            except Exception as e:
+                self.logger.exception(e)
+                return index, None
 
-            for future in concurrent.futures.as_completed(future_to_page):
-                page_num, result = future.result()
-                if result is not None:
-                    texts[page_num - 1] = result
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_index = {
+                executor.submit(process_single_image, data): data[0] for data in image_data
+            }
 
-        # Filter out failed pages (None values)
-        return [text for text in texts if text is not None]
+            for future in concurrent.futures.as_completed(future_to_index):
+                index, description = future.result()
+                descriptions[index] = description
 
-    def _process_pdf(self, pdf: Document) -> List[str] | str:
+        # Third step: Replace base64 encodings with respective descriptions
+        iter_matches = list(re.finditer(pattern, markdown_content))
+
+        result = markdown_content
+        for match, description in zip(reversed(iter_matches), reversed(descriptions)):
+            start, end = match.span()
+            replacement = f"> Image Description: {description}" if description else "> Image Description Unavailable"
+            result = result[:start] + replacement + result[end:]
+
+        return result
+
+    def _extract_from_paper(self, filepath: str) -> str:
+        """
+        Extracts all content from a paper-type PDF in Markdown format and generating descriptions for all embedded images using a vision LLM.
+
+        Args:
+            filepath (str): Path to input PDF.
+
+        Returns:
+            str: String containing the extracted text and image descriptions in Markdown format.
+        """
+        try:
+            text = to_markdown(filepath, embed_images=True)
+            replaced_text = self._replace_images_with_descriptions(text)
+            return replaced_text
+        except Exception as e:
+            raise RuntimeError(f"Error occurred when extracting text from paper-type {filepath}: {e}")
+
+    def _extract_from_slide(self, filepath: str) -> str:
+        """
+        Extracts all content from a slide deck-type PDF in Markdown format using a vision LLM.
+
+        Args:
+            filepath (str): Path to input PDF.
+
+        Returns:
+            str: String containing the extracted content from the PDF.
+        """
+        try:
+            pdf = google_client.files.upload(file=filepath)
+            response = google_client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=[pdf, "\n\n", SLIDE_EXTRACTION_PROMPT]
+            )
+            google_client.files.delete(name=pdf.name)
+            return response.text
+        except Exception as e:
+            raise RuntimeError(f"Error occurred when extracting text from slide deck-type {filepath}: {e}")
+
+        # def process_single_page(page_data):
+        #     page, page_num = page_data
+        #     try:
+        #         pixmap = page.get_pixmap()
+        #         im = pixmap.pil_image()
+        #         image_b64_data = self._encode_pil_image_to_base64(im)
+        #         text = self._describe_image(image_b64_data)
+        #         return page_num, text
+        #     except RuntimeError as e:
+        #         self.logger.exception(f"Error occurred when generating descriptions for page {page_num}: {e}")
+        #         return page_num, None
+        
+        # # Prepare page data with page numbers
+        # page_data = [(page, i) for i, page in enumerate(pdf, start=1)]
+        
+        # texts = [None] * len(page_data)  # Pre-allocated to maintain order
+        
+        # with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        #     future_to_page = {executor.submit(process_single_page, data): data for data in page_data}
+
+        #     for future in concurrent.futures.as_completed(future_to_page):
+        #         page_num, result = future.result()
+        #         if result is not None:
+        #             texts[page_num - 1] = result
+
+        # # Filter out failed pages (None values)
+        # return [text for text in texts if text is not None]
+
+    def _process_pdf(self, filepath: str) -> List[str] | str:
         """
         Process a PDF document for subsequent embedding.
 
@@ -112,26 +185,24 @@ class PdfPipeline(BasePipeline):
         Returns:
             str | List[str]: List of strings that contain descriptions for every slide for slide deck-type documents, or single string containing extracted text in Markdown format for paper-type documents.
         """
-        return self._process_slide(pdf) if self._is_slide(pdf) else self._process_paper(pdf)
+        return self._extract_from_slide(filepath) if self._is_slide(filepath) else self._extract_from_paper(filepath)
 
     def handle_file(self, document_id: str, filename: str, path: PosixPath | WindowsPath):
         """
         Handles the uploaded PDF file.
 
-        1. Extract PDF text using PyMuPDF4LLM for research paper-type documents / generate slide descriptions using vision LLM.
-        2. Create embeddings of extracted text / generated description.
+        1. Extract all content from uploaded PDF.
+        2. Create embeddings of the extracted content.
         3. Insert document (i.e., the PDF file) and embeddings entries into the database (DB).
 
         Args:
             document_id (str): UUID v4 of the document entry in the DB.
             filename (str): Name of uploaded PDF file.
-            path (PosixPath | WindowsPath): Path to uploaded PDF file.
+            path (PosixPath | WindowsPath): Path to uploaded PDF file. Has the format: <document_id>.pdf
         """
         try:
-            pdf = Document(path)
-
             # Process the PDF to extract its text / generate descriptions for it
-            text = self._process_pdf(pdf)
+            text = self._extract_from_slide(path) if self._is_slide(path) else self._extract_from_paper(path)
             self.logger.debug("Successfully processed PDF")
 
             contents, embeddings = self._create_embeddings(text)
@@ -145,11 +216,9 @@ class PdfPipeline(BasePipeline):
 
             self._upload_file_to_supabase(filename, path)
             self.logger.debug("Successfully uploaded file to Supabase bucket")
-        except RuntimeError as e:
-            self.logger.exception(e)
-        finally:
-            try:
-                remove(path)
-                self.logger.info("Successfully added PDF to knowledge base")
-            except Exception as e:
-                self.logger.exception(e)
+
+            remove(path)
+            self.logger.debug("Successfully deleted file from local filesystem")
+            self.logger.info("Successfully uploaded file to knowledge base.")
+        except Exception as e:
+            self.logger.exception(f"Error occurred when extracting text from {filename}: {e}")
