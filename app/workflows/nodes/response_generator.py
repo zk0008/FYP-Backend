@@ -17,27 +17,24 @@ class ResponseGenerator:
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def _build_system_message(self, state: ChatState) -> None:
-                            #   chunk_summaries: List[Dict[str, str | float]]) -> None:
         """
         Build system message with context information from retrieved chunks and web search results, if applicable.
         """
-        # chunks_text = "" if state.get("use_rag_query", False) else f"""
-        #     <document_chunks>
-        #     The following document chunks are formatted as "From {{filename}} with RRF score {{score}}:" followed by the content.
-        #     Use the filename from each chunk header for your citations.
-
-        #     {"\n\n".join([f"From {chunk.filename} with RRF score {round(chunk.rrf_score, 3)}:\n{chunk.content}" for chunk in state.get("chunk_summaries", [])]) if state.get("chunk_summaries") else "No document chunks available."}
-        #     </document_chunks>
-        # """
         use_rag_query = state.get("use_rag_query", False)
         # use_web_search = state.get("use_web_search", False)
 
         if use_rag_query:
             chunk_summaries = state.get("chunk_summaries", [])
-            chunks_text = "\n\n".join([f"Filename: {chunk.filename}\nRRF score: {round(chunk.rrf_score, 3)}\nContent: {chunk.content}"
-                                       for chunk in chunk_summaries])
+            if chunk_summaries:
+                chunks_text = "\n\n".join([
+                    f"Filename: {chunk.filename}\nRRF score: {round(chunk.rrf_score, 3)}\nContent: {chunk.content}"
+                    for chunk in chunk_summaries
+                ])
+                chunks_section = f"<document_chunks>\n{chunks_text}\n</document_chunks>"
+            else:
+                chunks_section = "<document_chunks>No document chunks available.</document_chunks>"
         else:
-            chunks_text = "No document chunks available."
+            chunks_section = "<document_chunks>\n<!- RAG query not enabled -->\n</document_chunks>"
 
         # TODO: Web search results
 
@@ -49,6 +46,7 @@ class ResponseGenerator:
                 1. Use the conversation history to understand the context and flow of prior discussion.
                 1.1. The conversation history consists of multiple users and you. You are the AI, while the users' messages are formatted as "{{username}}: {{message_content}}".
                 1.2. You must keep track of the contexts of each individual user within the chatroom.
+                1.3. Do not start your responses with "GroupGPT:" as that is just a label for your messages in the chat history.
 
                 2. **MANDATORY SOURCE CITATION**: You MUST cite sources for ANY factual claims, data, or information that comes from the provided context.
                 2.1. For document references: Use format "[{{filename}}]" immediately after the relevant information.
@@ -59,23 +57,14 @@ class ResponseGenerator:
                 3. Keep the tone conversational and appropriate for a group chat, but never omit required citations.
 
                 4. If the context does not contain enough information to answer the query, explicitly state this and suggest what additional information might be needed.
+                4.1. If the user did not select the RAG query option, suggest that they enable it to retrieve relevant document chunks.
 
                 5. Format your response clearly and concisely, ensuring citations are easily identifiable.
 
                 **CRITICAL**: Every piece of information derived from the provided context MUST include a citation. Failure to cite sources when using contextual information is not acceptable.
                 </instructions>
 
-                <document_chunks>
-                Each document chunk is formatted as:
-                ```
-                Filename: {{filename}}
-                RRF score: {{score}}
-                Content: {{content}}
-                ```
-                Use the filename from each chunk for your citations.
-
-                {chunks_text}
-                </document_chunks>
+                {chunks_section}
 
                 <citation_examples>
                 Good examples:
@@ -114,8 +103,6 @@ class ResponseGenerator:
         Generates the final response using all available information.
         """
         chat_history = state.get("chat_history", [])
-        # chunk_summaries = state.get("chunk_summaries", [])
-        # web_results = state.get("web_results", [])
 
         self._build_system_message(state)
 
