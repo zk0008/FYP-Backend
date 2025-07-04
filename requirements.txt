@@ -21,7 +21,9 @@ exceptiongroup==1.2.2
 fastapi==0.115.0
 frozenlist==1.5.0
 google-api-core==2.24.2
+google-api-python-client==2.175.0
 google-auth==2.40.1
+google-auth-httplib2==0.2.0
 google-cloud-aiplatform==1.93.1
 google-cloud-bigquery==3.33.0
 google-cloud-core==2.4.3
@@ -40,6 +42,7 @@ h11==0.14.0
 h2==4.1.0
 hpack==4.0.0
 httpcore==1.0.7
+httplib2==0.22.0
 httpx==0.27.2
 httpx-sse==0.4.0
 hyperframe==6.0.1
@@ -84,6 +87,7 @@ pydantic-settings==2.7.1
 pydantic_core==2.23.4
 PyMuPDF==1.25.5
 pymupdf4llm==0.0.24
+pyparsing==3.2.3
 PyPDF2==3.0.1
 pytesseract==0.3.13
 python-dateutil==2.9.0.post0
@@ -111,6 +115,7 @@ tiktoken==0.8.0
 tqdm==4.67.1
 typing-inspect==0.9.0
 typing_extensions==4.12.2
+uritemplate==4.2.0
 urllib3==2.3.0
 uvicorn==0.34.0
 validators==0.35.0

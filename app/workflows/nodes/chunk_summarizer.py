@@ -31,8 +31,7 @@ class ChunkSummarizer:
             <instructions>
             1. Carefully read and understand the user's query and the chunks presented to you.
             2. Identify main points and key details that are present in each of the chunks.
-            3. Prioritise information within the chunk that either directly addresses or is highly relevant to the user's query. However, **DO NOT INVENT INFORMATION OR MAKE ASSUMPTIONS OUTSIDE THE CHUNK'S CONTENT".
-            3.1. If the chunk does not seem relevant to the user's query, you can return the original chunk's content as the summary.
+            3. Prioritize information within the chunk that either directly addresses or is highly relevant to the user's query. However, **DO NOT INVENT INFORMATION OR MAKE ASSUMPTIONS OUTSIDE THE CHUNK'S CONTENT".
             </instructions>
 
             <formatting>
@@ -42,13 +41,17 @@ class ChunkSummarizer:
         """)
 
     def __call__(self, state: ChatState) -> dict:
-        document_chunks = state["document_chunks"]
-        if not document_chunks:
-            return {"chunk_summaries": []}
-
         query = state["query"]
-        chunks_text = "\n\n".join([f"From {chunk["filename"]} with RRF score {round(chunk["rrf_score"], 3)}:\n{chunk["content"]}"
-                                    for chunk in document_chunks])
+
+        document_chunks = state["document_chunks"]
+        if document_chunks:
+            chunks_text = "\n\n".join([
+                f"Filename: {chunk["filename"]}\nRRF score: {round(chunk["rrf_score"], 3)}\nContent: {chunk["content"]}"
+                for chunk in document_chunks
+            ])
+            chunks_section = f"<document_chunks>\n{chunks_text}\n</document_chunks>"
+        else:
+            chunks_section = "<document_chunks>No document chunks available.</document_chunks>"
 
         try:
             response = self.llm.invoke([
@@ -58,11 +61,7 @@ class ChunkSummarizer:
 
                     <user_query>{query}</user_query>
 
-                    <document_chunks>
-                    The following document chunks are formatted as "From {{filename}} with RRF score {{score}}:" followed by the content.
-
-                    {chunks_text}
-                    </document_chunks>
+                    {chunks_section}
                 """)
             ])
             parsed_content = self.output_parser.parse(response.content)

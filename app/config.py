@@ -26,4 +26,7 @@ class Settings(BaseSettings):
     LANGSMITH_API_KEY: str
     LANGSMITH_PROJECT: str
 
+    GOOGLE_API_KEY: str
+    GOOGLE_CSE_ID: str
+
     model_config = SettingsConfigDict(env_file='../.env', extra='ignore')

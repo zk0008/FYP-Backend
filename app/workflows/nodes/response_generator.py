@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List
+from datetime import datetime
 
 from langchain_core.messages import SystemMessage
 from langchain_google_vertexai.chat_models import ChatVertexAI
@@ -21,26 +21,50 @@ class ResponseGenerator:
         Build system message with context information from retrieved chunks and web search results, if applicable.
         """
         use_rag_query = state.get("use_rag_query", False)
-        # use_web_search = state.get("use_web_search", False)
+        use_web_search = state.get("use_web_search", False)
 
         if use_rag_query:
-            chunk_summaries = state.get("chunk_summaries", [])
-            if chunk_summaries:
+            document_chunks = state.get("document_chunks", [])
+            if document_chunks:
                 chunks_text = "\n\n".join([
-                    f"Filename: {chunk.filename}\nRRF score: {round(chunk.rrf_score, 3)}\nContent: {chunk.content}"
-                    for chunk in chunk_summaries
+                    f"Filename: {chunk["filename"]}\nRRF score: {round(chunk["rrf_score"], 3)}\nContent: {chunk["content"]}"
+                    for chunk in document_chunks
                 ])
                 chunks_section = f"<document_chunks>\n{chunks_text}\n</document_chunks>"
             else:
                 chunks_section = "<document_chunks>No document chunks available.</document_chunks>"
+
+            # chunk_summaries = state.get("chunk_summaries", [])
+            # if chunk_summaries:
+            #     chunks_text = "\n\n".join([
+            #         f"Filename: {chunk.filename}\nRRF score: {round(chunk.rrf_score, 3)}\nContent: {chunk.content}"
+            #         for chunk in chunk_summaries
+            #     ])
+            #     chunks_section = f"<document_chunks>\n{chunks_text}\n</document_chunks>"
+            # else:
+            #     chunks_section = "<document_chunks>No document chunks available.</document_chunks>"
         else:
             chunks_section = "<document_chunks>\n<!- RAG query not enabled -->\n</document_chunks>"
 
         # TODO: Web search results
+        if use_web_search:
+            web_results = state.get("web_results", [])
+            if web_results:
+                search_results_text = "\n\n".join([
+                    f"Title: {result['title']}\nLink: {result['link']}\nSnippet: {result['snippet']}"
+                    for result in web_results
+                ])
+                search_results_section = f"<web_search_results>\n{search_results_text}\n</web_search_results>"
+            else:
+                search_results_section = "<web_search_results>No web search results available.</web_search_results>"
+        else:
+            search_results_section = "<web_search_results>\n<!- Web search not enabled -->\n</web_search_results>"
 
         self.system_message = SystemMessage(
             content=f"""
                 You are GroupGPT, a helpful AI assistant in a group chat. Your task is to respond to the user's query comprehensively and naturally using all available context.
+
+                The current date and time is {datetime.now().strftime("%A, %B %-m, %Y at %I:%M:%S %p")}.
 
                 <instructions>
                 1. Use the conversation history to understand the context and flow of prior discussion.
@@ -58,6 +82,7 @@ class ResponseGenerator:
 
                 4. If the context does not contain enough information to answer the query, explicitly state this and suggest what additional information might be needed.
                 4.1. If the user did not select the RAG query option, suggest that they enable it to retrieve relevant document chunks.
+                4.2. If the user did not select the web search option, suggest that they enable it to retrieve up-to-date information from the web.
 
                 5. Format your response clearly and concisely, ensuring citations are easily identifiable.
 
@@ -65,6 +90,8 @@ class ResponseGenerator:
                 </instructions>
 
                 {chunks_section}
+
+                {search_results_section}
 
                 <citation_examples>
                 Good examples:
