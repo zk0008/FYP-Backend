@@ -44,28 +44,53 @@ class GroupGPTGraph:
         workflow.add_node("history_fetcher", self.history_fetcher)
         workflow.add_node("response_generator", self.response_generator, defer=True)
 
-        # Define workflow steps
-        # Parallel execution of fetching chat history and retrieving relevant chunks
+        ### Workflow Structure ###
+        # Parallel execution of fetching chat history, retrieving relevant chunks, and searching the web
+        # Chunk retrieval and web searching are conditional
         workflow.add_edge(START, "history_fetcher")
-        workflow.add_edge(START, "chunk_retriever")
+        workflow.add_conditional_edges(
+            START,
+            lambda state: "chunk_retriever" if state["use_rag_query"] else "response_generator",
+        )
+        # workflow.add_conditional_edges(
+        #     START,
+        #     lambda state: "web_searcher" if state["use_web_search"] else "response_generator",
+        # )
 
+        # After retrieving chunks, summarize them first before generating the response
         workflow.add_edge("chunk_retriever", "chunk_summarizer")
+
+        # After searching the web, summarize the results first before generating the response
+        # workflow.add_edge("web_searcher", "web_result_summarizer")
 
         workflow.add_edge("history_fetcher", "response_generator")
         workflow.add_edge("chunk_summarizer", "response_generator")
+        # workflow.add_edge("web_result_summarizer", "response_generator")
+
+        # Finally, generate the response
         workflow.add_edge("response_generator", END)
 
         return workflow.compile()
 
-    async def process_query(self, username: str, chatroom_id: str, content: str) -> str:
+    async def process_query(
+        self,
+        username: str,
+        chatroom_id: str,
+        use_rag_query: bool,
+        use_web_search: bool,
+        content: str
+    ) -> str:
         initial_state = ChatState(
             username=username,
             chatroom_id=chatroom_id,
             query=content,
             chat_history=[],
+            # RAG-related fields
+            use_rag_query=use_rag_query,
             document_chunks=[],
-            document_summaries=[],
-            needs_web_search=False,
+            chunk_summaries=[],
+            # Web search-related fields
+            use_web_search=use_web_search,
             web_results=[],
             final_response=""
         )

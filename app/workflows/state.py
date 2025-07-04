@@ -7,13 +7,18 @@ class ChatState(TypedDict):
     """
     Represents the state of the chat, including the chat history and any relevant document chunks.
     """
-    username: str               # Username of the user who sent the message
-    chatroom_id: str            # Unique identifier for the chatroom, for fetching history
-    query: str                  # Query sent by the user
+    username: str                   # Username of the user who sent the message
+    chatroom_id: str                # Unique identifier for the chatroom, for fetching history
+    query: str                      # Query sent by the user
     chat_history: Annotated[List[AIMessage | HumanMessage], operator.add]
+
+    # RAG-related fields
+    use_rag_query: bool = False     # Whether to use RAG for the query
     document_chunks: Annotated[List[Dict[str, str | float]], operator.add]
     chunk_summaries: Annotated[List[Dict[str, str | float]], operator.add]
-    # needs_web_search: bool      # Whether chat_history and document_chunks are sufficient to generate a response to user's query
-    # "title": str, "url": str, "snippet": str
-    # web_results: List[Dict[str, str]]
-    final_response: str         # Final response to be returned to the user
+
+    # Web search-related fields
+    use_web_search: bool = False    # Whether to use web search for the query
+    web_results: Annotated[List[Dict[str, str]], operator.add]  # List of web search results, each with "title", "url", and "snippet"
+
+    final_response: str             # Final response to be returned to the user

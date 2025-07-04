@@ -16,14 +16,28 @@ class ResponseGenerator:
         self.llm = llm
         self.logger = logging.getLogger(self.__class__.__name__)
 
-    def _build_system_message(self, chunk_summaries: List[Dict[str, str | float]]) -> None:
+    def _build_system_message(self, state: ChatState) -> None:
+                            #   chunk_summaries: List[Dict[str, str | float]]) -> None:
         """
-        Build system message with context information from retrieved chunks.
+        Build system message with context information from retrieved chunks and web search results, if applicable.
         """
-        chunks_text = "None"        # Default to "None"
-        if chunk_summaries:
-            chunks_text = "\n\n".join([f"From {chunk.filename} with RRF score {round(chunk.rrf_score, 3)}:\n{chunk.content}"
+        # chunks_text = "" if state.get("use_rag_query", False) else f"""
+        #     <document_chunks>
+        #     The following document chunks are formatted as "From {{filename}} with RRF score {{score}}:" followed by the content.
+        #     Use the filename from each chunk header for your citations.
+
+        #     {"\n\n".join([f"From {chunk.filename} with RRF score {round(chunk.rrf_score, 3)}:\n{chunk.content}" for chunk in state.get("chunk_summaries", [])]) if state.get("chunk_summaries") else "No document chunks available."}
+        #     </document_chunks>
+        # """
+        use_rag_query = state.get("use_rag_query", False)
+        # use_web_search = state.get("use_web_search", False)
+
+        if use_rag_query:
+            chunk_summaries = state.get("chunk_summaries", [])
+            chunks_text = "\n\n".join([f"Filename: {chunk.filename}\nRRF score: {round(chunk.rrf_score, 3)}\nContent: {chunk.content}"
                                        for chunk in chunk_summaries])
+        else:
+            chunks_text = "No document chunks available."
 
         # TODO: Web search results
 
@@ -52,8 +66,13 @@ class ResponseGenerator:
                 </instructions>
 
                 <document_chunks>
-                The following document chunks are formatted as "From {{filename}} with RRF score {{score}}:" followed by the content.
-                Use the filename from each chunk header for your citations.
+                Each document chunk is formatted as:
+                ```
+                Filename: {{filename}}
+                RRF score: {{score}}
+                Content: {{content}}
+                ```
+                Use the filename from each chunk for your citations.
 
                 {chunks_text}
                 </document_chunks>
@@ -95,10 +114,10 @@ class ResponseGenerator:
         Generates the final response using all available information.
         """
         chat_history = state.get("chat_history", [])
-        chunk_summaries = state.get("chunk_summaries", [])
+        # chunk_summaries = state.get("chunk_summaries", [])
         # web_results = state.get("web_results", [])
 
-        self._build_system_message(chunk_summaries)
+        self._build_system_message(state)
 
         # Build message sequence
         messages = []
