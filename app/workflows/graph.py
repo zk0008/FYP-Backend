@@ -50,7 +50,11 @@ class GroupGPTGraph:
         workflow.add_edge(START, "history_fetcher")
         workflow.add_conditional_edges(
             START,
-            lambda state: "chunk_retriever" if state["use_rag_query"] else "response_generator",
+            lambda state: "RAG query" if state["use_rag_query"] else "No RAG query",        # For graph visualization
+            {
+                "RAG query": "chunk_retriever",
+                "No RAG query": "response_generator"
+            }
         )
         # workflow.add_conditional_edges(
         #     START,
