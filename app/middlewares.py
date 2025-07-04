@@ -11,8 +11,12 @@ async def auth_middleware(request: Request, call_next) -> Response:
     Args:
         request (Request): The request sent by the client.
     """
-    # Allow unauthenticated access to only the root path
-    if request.url.path == "/":
+    # Allow unauthenticated access to root and documentation endpoints
+    if request.url.path in {"/", "/docs", "redoc", "/openapi.json"}:
+        return await call_next(request)
+
+    # Allow unauthenticated access to static files
+    if request.url.path.startswith("/static/"):
         return await call_next(request)
 
     auth_header = request.headers.get("Authorization", None)
