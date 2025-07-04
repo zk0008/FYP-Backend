@@ -38,7 +38,6 @@ class AdvancedRequest(BaseModel):
 
 @router.post("/gpt35")
 async def prompt(chats: List[Chat]):
-    print(chats)
     res = get_answer(chats)
     return res
 
@@ -67,15 +66,22 @@ async def advanced_prompt(request: AdvancedRequest):
     return res
 
 
-graph = GroupGPTGraph()
-
 @router.post("/groupgpt")
 async def invoke_groupgpt(request: GroupGPTRequest):
     try:
+        graph = GroupGPTGraph()
+
         response = await graph.process_query(
             username=request.username,
             content=request.content,
-            chatroom_id=request.chatroom_id
+            chatroom_id=request.chatroom_id,
+            use_rag_query=request.use_rag_query,
+            use_web_search=request.use_web_search
+        )
+
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={"response": response}
         )
     except Exception as e:
         logger.exception(e)
@@ -83,8 +89,3 @@ async def invoke_groupgpt(request: GroupGPTRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={"message": str(e)}
         )
-
-    return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content={"response": response}
-    )
