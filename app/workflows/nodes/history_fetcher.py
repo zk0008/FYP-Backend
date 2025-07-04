@@ -23,33 +23,37 @@ class HistoryFetcher:
                 .execute()
             )
 
-            # # Exclude last message for now, which is the latest message sent by the user to invoke GroupGPT
+            # TODO: Use user's last message (unmodified query) or a modified version?
             messages = response.data
             chat_history = []
-
-            # Users' and GroupGPT's messages are separated
+            # Separate user messages and GroupGPT's messages
             current_user_messages = []
+            current_groupgpt_messages = []
+
             for msg in messages:
                 username = msg["username"]
                 content = msg["content"]
 
-                # Current message is from GroupGPT
-                if username == "GroupGPT":
-                    # Add accumulated user messages first
+                if username == "GroupGPT":      # Current message is from GroupGPT
+                    # Add accumulated user messages first (if any)
                     if current_user_messages:
                         combined_user_messages = "\n".join(current_user_messages)
                         chat_history.append(HumanMessage(content=combined_user_messages))
                         current_user_messages = []
 
-                    # Add GroupGPT's message
-                    chat_history.append(AIMessage(content=content))
-                # Current message is from a user
-                else:
+                    # Accumulate GroupGPT's messages
+                    current_groupgpt_messages.append(f"{username}: {content}")
+                else:                           # Current message is from a user
+                    # Add accumulated GroupGPT messages first (if any)
+                    if current_groupgpt_messages:
+                        combined_groupgpt_messages = "\n".join(current_groupgpt_messages)
+                        chat_history.append(AIMessage(content=combined_groupgpt_messages))
+                        current_groupgpt_messages = []
+
+                    # Accumulate user messages
                     current_user_messages.append(f"{username}: {content}")
 
-
-            # Include last message, which is user's rewritten query, to remaining user messages
-            # current_user_messages.append(f"{state["username"]}: {state["rewritten_query"]}")
+            # If there are any remaining user messages, add them to the chat history
             combined_user_messages = "\n".join(current_user_messages)
             chat_history.append(HumanMessage(content=combined_user_messages))
 
