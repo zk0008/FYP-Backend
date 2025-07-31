@@ -13,14 +13,14 @@ load_dotenv()       # Load environment variables before all other imports
 from app.dependencies import get_settings
 from app.logger import setup_logging
 from app.middlewares import auth_middleware
-from app.routers import files, queries
+from app.routers import files, legacy, queries
 from app.workflows import GroupGPTGraph
 
 settings = get_settings()
 
 setup_logging()
 logger = logging.getLogger(__name__)
-os.makedirs("static", exist_ok=True)        # Ensure static directory exists
+os.makedirs("static", exist_ok=True)  # Ensure static directory exists
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -62,6 +62,7 @@ app.add_middleware(
 app.add_middleware(BaseHTTPMiddleware, dispatch=auth_middleware)
 
 app.include_router(files.router)
+app.include_router(legacy.router)
 app.include_router(queries.router)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
