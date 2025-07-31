@@ -9,11 +9,11 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from app.deprecated.advanced import get_advanced_answer
-from app.deprecated.embed import embed_document
-from app.deprecated.gpt import get_answer, Chat
-from app.deprecated.pdf import get_pdf_answer
-from app.deprecated.rag import get_rag_answer
+from app.legacy.advanced import get_advanced_answer
+from app.legacy.embed import embed_document
+from app.legacy.gpt import get_answer, Chat
+from app.legacy.pdf import get_pdf_answer
+from app.legacy.rag import get_rag_answer
 
 from app.models import GroupGPTRequest
 from app.workflows.graph import GroupGPTGraph
