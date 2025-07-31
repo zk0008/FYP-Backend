@@ -20,45 +20,25 @@ class ResponseGenerator:
         """
         Build system message with context information from retrieved chunks and web search results, if applicable.
         """
-        use_rag_query = state.get("use_rag_query", False)
-        use_web_search = state.get("use_web_search", False)
-
-        if use_rag_query:
-            document_chunks = state.get("document_chunks", [])
-            if document_chunks:
-                chunks_text = "\n\n".join([
-                    f"Filename: {chunk["filename"]}\nRRF score: {round(chunk["rrf_score"], 3)}\nContent: {chunk["content"]}"
-                    for chunk in document_chunks
-                ])
-                chunks_section = f"<document_chunks>\n{chunks_text}\n</document_chunks>"
-            else:
-                chunks_section = "<document_chunks>No document chunks available.</document_chunks>"
-
-            # chunk_summaries = state.get("chunk_summaries", [])
-            # if chunk_summaries:
-            #     chunks_text = "\n\n".join([
-            #         f"Filename: {chunk.filename}\nRRF score: {round(chunk.rrf_score, 3)}\nContent: {chunk.content}"
-            #         for chunk in chunk_summaries
-            #     ])
-            #     chunks_section = f"<document_chunks>\n{chunks_text}\n</document_chunks>"
-            # else:
-            #     chunks_section = "<document_chunks>No document chunks available.</document_chunks>"
+        document_chunks = state.get("document_chunks", [])
+        if document_chunks:
+            chunks_text = "\n\n".join([
+                f"Filename: {chunk['filename']}\nRRF score: {round(chunk['rrf_score'], 3)}\nContent: {chunk['content']}"
+                for chunk in document_chunks
+            ])
+            chunks_section = f"<document_chunks>\n{chunks_text}\n</document_chunks>"
         else:
-            chunks_section = "<document_chunks>\n<!- RAG query not enabled -->\n</document_chunks>"
+            chunks_section = "<document_chunks>No document chunks available.</document_chunks>"
 
-        # TODO: Web search results
-        if use_web_search:
-            web_results = state.get("web_results", [])
-            if web_results:
-                search_results_text = "\n\n".join([
-                    f"Title: {result['title']}\nLink: {result['link']}\nSnippet: {result['snippet']}"
-                    for result in web_results
-                ])
-                search_results_section = f"<web_search_results>\n{search_results_text}\n</web_search_results>"
-            else:
-                search_results_section = "<web_search_results>No web search results available.</web_search_results>"
-        else:
-            search_results_section = "<web_search_results>\n<!- Web search not enabled -->\n</web_search_results>"
+        # chunk_summaries = state.get("chunk_summaries", [])
+        # if chunk_summaries:
+        #     chunks_text = "\n\n".join([
+        #         f"Filename: {chunk.filename}\nRRF score: {round(chunk.rrf_score, 3)}\nContent: {chunk.content}"
+        #         for chunk in chunk_summaries
+        #     ])
+        #     chunks_section = f"<document_chunks>\n{chunks_text}\n</document_chunks>"
+        # else:
+        #     chunks_section = "<document_chunks>No document chunks available.</document_chunks>"
 
         self.system_message = SystemMessage(
             content=f"""
@@ -73,10 +53,9 @@ class ResponseGenerator:
                 1.3. Do not start your responses with "GroupGPT:" as that is just a label for your messages in the chat history.
 
                 2. **MANDATORY SOURCE CITATION**: You MUST cite sources for ANY factual claims, data, or information that comes from the provided context.
-                2.1. For document references: Use format "[{{filename}}]" immediately after the relevant information.
-                2.2. For web search results: Use format "[{{site_name}} - {{url}}]" immediately after the relevant information.
-                2.3. If you reference multiple sources in one response, cite each one separately.
-                2.4. Do NOT provide information from the context without proper citation.
+                2.1. For document references: If page or slide numbers are available, use format "[{{filename}}, page/slide {{page/slide number}}]" immediately after the relevant information. Otherwise, use format "[{{filename}}]".
+                2.2. If you reference multiple sources in one response, cite each one separately.
+                2.3. Do NOT provide information from the context without proper citation.
 
                 3. Keep the tone conversational and appropriate for a group chat, but never omit required citations.
 
@@ -91,12 +70,10 @@ class ResponseGenerator:
 
                 {chunks_section}
 
-                {search_results_section}
-
                 <citation_examples>
                 Good examples:
-                - "According to the quarterly report, sales increased by 15% [Q3_Report.pdf]"
-                - "The latest research shows that remote work productivity has improved [Harvard Business Review - https://hbr.org/remote-work-study]"
+                - "According to the quarterly report, sales increased by 15% [Q3_Report.pdf, page 4]."
+                - "Object-oriented programming is a programming paradigm based on the concept of objects [OOP_Lecture_Recording.mp3]."
 
                 Bad examples:
                 - "According to the quarterly report, sales increased by 15%" (missing citation)
