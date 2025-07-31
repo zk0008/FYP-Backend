@@ -1,13 +1,7 @@
 import logging
-from typing import List
 
-from fastapi import (
-    APIRouter,
-    BackgroundTasks,
-    status
-)
+from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
 
 from app.models import GroupGPTRequest
 from app.workflows.graph import GroupGPTGraph
