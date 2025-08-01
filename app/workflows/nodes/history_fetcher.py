@@ -23,7 +23,6 @@ class HistoryFetcher:
                 .execute()
             )
 
-            # TODO: Use user's last message (unmodified query) or a modified version?
             messages = response.data
             chat_history = []
             # Separate user messages and GroupGPT's messages
