@@ -9,7 +9,7 @@ class PythonREPLInput(BaseModel):
     """
     Input schema for Python REPL tool.
     """
-    code: str = Field(..., description="The Python code to execute. Input must be a valid Python command. Use the `print()` function to see the output of a value.")
+    code: str = Field(..., description="The Python code to execute. Input must consist of valid Python commands. Use the `print()` function to see the output of a value.")
 
 
 class PythonREPLTool(BaseTool):
