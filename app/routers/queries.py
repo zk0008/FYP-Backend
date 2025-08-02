@@ -18,12 +18,7 @@ logger = logging.getLogger(__name__)
 async def invoke_groupgpt(request: GroupGPTRequest):
     try:
         graph = GroupGPTGraph()
-
-        response = await graph.process_query(
-            username=request.username,
-            content=request.content,
-            chatroom_id=request.chatroom_id
-        )
+        response = await graph.process_query(request)
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,

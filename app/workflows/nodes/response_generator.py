@@ -10,6 +10,7 @@ from supabase import Client
 from app.workflows.state import ChatState
 from app.workflows.tools import (
     ArxivSearchTool,
+    ChunkRetrieverTool,
     PythonREPLTool,
     WebSearchTool
 )
@@ -17,48 +18,12 @@ from app.dependencies import get_settings
 
 
 class ResponseGenerator:
-    MAX_TOOL_CALLS = 5
+    MAX_TOOL_CALLS = 10
+
 
     def __init__(self, supabase: Client, llm: ChatOpenAI | ChatVertexAI):
         self.supabase = supabase
-
-        # Initialize tools
-        self.arxiv_search_tool = ArxivSearchTool()
-        self.python_repl_tool = PythonREPLTool()
-        self.web_search_tool = WebSearchTool()
-
-        self.llm = llm.bind_tools([
-            self.arxiv_search_tool,
-            self.python_repl_tool,
-            self.web_search_tool
-        ])
-        self.logger = logging.getLogger(self.__class__.__name__)
-
-    def _build_system_message(self, state: ChatState) -> None:
-        """
-        Build system message with context information from retrieved chunks and web search results, if applicable.
-        """
-        document_chunks = state.get("document_chunks", [])
-        if document_chunks:
-            chunks_text = "\n\n".join([
-                f"Filename: {chunk['filename']}\nRRF score: {round(chunk['rrf_score'], 3)}\nContent: {chunk['content']}"
-                for chunk in document_chunks
-            ])
-            chunks_section = f"<document_chunks>\n{chunks_text}\n</document_chunks>"
-        else:
-            chunks_section = "<document_chunks>No document chunks available.</document_chunks>"
-
-        # chunk_summaries = state.get("chunk_summaries", [])
-        # if chunk_summaries:
-        #     chunks_text = "\n\n".join([
-        #         f"Filename: {chunk.filename}\nRRF score: {round(chunk.rrf_score, 3)}\nContent: {chunk.content}"
-        #         for chunk in chunk_summaries
-        #     ])
-        #     chunks_section = f"<document_chunks>\n{chunks_text}\n</document_chunks>"
-        # else:
-        #     chunks_section = "<document_chunks>No document chunks available.</document_chunks>"
-
-        # TODO: Add executed code to generated response
+        # TODO: Figure out a way to include any executed Python code in generated response
         self.system_message = SystemMessage(
             content=f"""
                 You are GroupGPT, a helpful AI assistant in a group chat. Your task is to respond to the user's query comprehensively and naturally using all available context.
@@ -72,9 +37,10 @@ class ResponseGenerator:
                 1.3. Do not start your responses with "GroupGPT:" as that is just a label for your messages in the chat history.
 
                 2. **TOOL USAGE**: You have access to the following tools:
-                2.1. *web_search*: Use this tool to search the web about any topic. This is useful when the user asks about up-to-date information, or when the provided context and your training data doesn't contain sufficient information to answer the query.
-                2.2. *python_repl*: Use this tool to execute Python code for calculations, data processing, or any other programming-related tasks. Use the `print()` function to get required results from this tool.
-                2.3. *arxiv_search*: Use this tool to search arXiv for academic papers related to the query. This is useful when the user asks about research papers or articles on a specific topic.
+                2.1. *arxiv_search*: Use this tool to search arXiv for academic papers related to the query. This is useful when the user asks about research papers or articles on a specific topic.
+                2.2. *chunk_retriever*: Use this tool to retrieve relevant document chunks from the knowledge base using hybrid search. This is useful when you need to find specific information or context from the knowledge base related to a query.
+                2.3. *python_repl*: Use this tool to execute Python code for calculations, data processing, or any other programming-related tasks. Use the `print()` function to get required results from this tool.
+                2.4. *web_search*: Use this tool to search the web about any topic. This is useful when the user asks about up-to-date information, or when the provided context and your training data doesn't contain sufficient information to answer the query.
 
                 3. **MANDATORY SOURCE CITATION**: You MUST cite sources for ANY factual claims, data, or information that comes from the provided context.
                 3.1. For document references: If page or slide numbers are available, use format "[{{filename}}, page/slide {{page/slide number}}]" immediately after the relevant information. Otherwise, use format "[{{filename}}]".
@@ -84,15 +50,12 @@ class ResponseGenerator:
                 3.5. Do NOT provide information from the context without proper citation.
 
                 4. Keep the tone conversational and appropriate for a group chat, but never omit required citations.
+                4.1. If there are multiple users in the chatroom, you should address the user who asked the question directly (i.e., "Hi {{username}}, here's the information you requested...").
 
                 5. If the context does not contain enough information to answer the query, explicitly state this and suggest what additional information might be needed.
 
-                6. Format your response clearly and concisely, ensuring citations are easily identifiable.
-
                 **CRITICAL**: Every piece of information derived from the provided context MUST include a citation. Failure to cite sources when using contextual information is not acceptable.
                 </instructions>
-
-                <document_chunks>No document chunks available.</document_chunks>
 
                 <citation_examples>
                 Good examples:
@@ -107,7 +70,22 @@ class ResponseGenerator:
             """
         )
 
-    def _execute_tool_calls(self, tool_call: Dict[str, str]) -> ToolMessage:
+        # Initialize tools
+        self.arxiv_search_tool = ArxivSearchTool()
+        self.chunk_retriever_tool = ChunkRetrieverTool()
+        self.python_repl_tool = PythonREPLTool()
+        self.web_search_tool = WebSearchTool()
+
+        self.llm = llm.bind_tools([
+            self.arxiv_search_tool,
+            self.chunk_retriever_tool,
+            self.python_repl_tool,
+            self.web_search_tool
+        ])
+        self.logger = logging.getLogger(self.__class__.__name__)
+
+
+    def _execute_tool_calls(self, tool_call: Dict[str, str], chatroom_id: str) -> ToolMessage:
         """
         Executes a single tool call and returns the result as a ToolMessage.
         """
@@ -125,15 +103,20 @@ class ResponseGenerator:
                 tool_result = self.arxiv_search_tool._run(
                     query=tool_call['args']['query']
                 )
+            elif tool_call['name'] == 'chunk_retriever':
+                tool_result = self.chunk_retriever_tool._run(
+                    chatroom_id=chatroom_id,
+                    query=tool_call['args']['query'],
+                    num_chunks=tool_call['args'].get('num_chunks', 5)
+                )
             else:
                 self.logger.warning(f"Unknown tool call: {tool_call['name']}")
                 tool_result = f"Unknown tool call: {tool_call['name']}"
-            
+
             return ToolMessage(
                 content=tool_result,
                 tool_call_id=tool_call['id']
             )
-            
         except Exception as e:
             self.logger.exception(f"Error executing tool {tool_call['name']}: {e}")
             return ToolMessage(
@@ -141,7 +124,8 @@ class ResponseGenerator:
                 tool_call_id=tool_call['id']
             )
 
-    def _handle_tool_calls(self, messages: List) -> List:
+
+    def _handle_tool_calls(self, messages: List, chatroom_id: str) -> List:
         """Handle tool calls and add tool responses to message history."""
         iteration = 0
 
@@ -153,7 +137,7 @@ class ResponseGenerator:
             # Check if the response contains tool calls
             if hasattr(response, 'tool_calls') and response.tool_calls:
                 for tool_call in response.tool_calls:
-                    tool_message = self._execute_tool_calls(tool_call)
+                    tool_message = self._execute_tool_calls(tool_call, chatroom_id)
                     messages.append(tool_message)
 
                 iteration += 1
@@ -164,6 +148,7 @@ class ResponseGenerator:
         # Max. iterations reached
         self.logger.warning("Maximum tool call iterations reached without final response.")
         return messages, response
+
 
     def _insert_response(
         self,
@@ -189,19 +174,13 @@ class ResponseGenerator:
         """
         Generates the final response using all available information.
         """
-        chat_history = state.get("chat_history", [])
-
-        self._build_system_message(state)
-
         # Build message sequence
         messages = []
         messages.append(self.system_message)
-
-        if chat_history:
-            messages.extend(chat_history)
+        messages.extend(state.get("chat_history", []))
 
         try:
-            messages, response = self._handle_tool_calls(messages)
+            messages, response = self._handle_tool_calls(messages, state["chatroom_id"])
             final_response = response.content.strip()
 
             if not final_response:
@@ -213,9 +192,13 @@ class ResponseGenerator:
             self.logger.exception(e)
             final_response = "I apologize, but I encountered an error while generating a response. Please try again."
 
+        try:
+            self._insert_response(
+                chatroom_id=state["chatroom_id"],
+                content=final_response
+            )
+        except Exception as e:
+            self.logger.exception(f"Error inserting response into database: {e}")
+
         state["final_response"] = final_response
-        self._insert_response(
-            chatroom_id=state["chatroom_id"],
-            content=state["final_response"]
-        )
         return state

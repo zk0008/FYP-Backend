@@ -13,14 +13,13 @@ class WebSearchInput(BaseModel):
     Input schema for web search tool.
     """
     query: str = Field(..., description="The search query to perform on the web.")
-    num_results: int = Field(default=5, description="Number of search results to return.")
+    num_results: int = Field(default=5, description="Number of search results to return. Default is 5. Adjust based on the query complexity and expected results.")
 
 
 class WebSearchTool(BaseTool):
     """
     Tool for searching the web using Google Search API.
     """
-
     name: str = "web_search"
     description: str = "Search the web for current information on any topic. Use this when you need up-to-date information that might not be in the provided context or when the user asks about recent events, news, or current information."
     args_schema: type[BaseModel] = WebSearchInput
@@ -42,7 +41,9 @@ class WebSearchTool(BaseTool):
                 for result in web_results
             ])
 
-            logger.debug(f"Web search executed for query: {query}")
+            logger.debug(f"Web search executed with the following parameters:\n"
+                         f"Query: {query}\n"
+                         f"Number of Results: {num_results}")
             logger.debug(f"Web search results:\n{web_results_text}")
 
             return web_results_text
