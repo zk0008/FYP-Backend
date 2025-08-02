@@ -16,7 +16,6 @@ class ArxivSearchTool(BaseTool):
     """
     Tool for searching arXiv papers using the arXiv API.
     """
-
     name: str = "arxiv_search"
     description: str = "Search arXiv for academic papers related to the query. Use this when you need to find relevant research papers or articles on a specific topic."
     args_schema: type[BaseModel] = ArxivSearchInput
