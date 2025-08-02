@@ -3,12 +3,12 @@ import logging
 import os
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
-load_dotenv()       # Load environment variables before all other imports
+load_dotenv()  # Load environment variables before all other imports
 
 from app.dependencies import get_settings
 from app.logger import setup_logging
@@ -69,4 +69,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
 async def root():
-    return {"message": "Server is running"}
+    return JSONResponse(
+        status_code=200,
+        content={"message": "GroupGPT API server is running."}
+    )
