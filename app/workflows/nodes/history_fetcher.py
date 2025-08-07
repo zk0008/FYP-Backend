@@ -56,10 +56,11 @@ class HistoryFetcher:
                     current_user_messages.append(f"{username}: {content}")
 
             # If there are any remaining user messages, add them to the chat history
-            combined_user_messages = "\n".join(current_user_messages)
-            chat_history.append(HumanMessage(content=combined_user_messages))
-            length_before_trim = len(chat_history)
+            if current_user_messages:
+                combined_user_messages = "\n".join(current_user_messages)
+                chat_history.append(HumanMessage(content=combined_user_messages))
 
+            length_before_trim = len(chat_history)
             chat_history = trim_messages(
                 chat_history,
                 max_tokens=0.8 * GEMINI_25_MAX_INPUT_TOKENS,  # Set aside 20% for subsequent tool calls and responses
@@ -71,6 +72,7 @@ class HistoryFetcher:
 
             self.logger.debug(f"Successfully fetched conversation history. Length before trim: {length_before_trim}, after trim: {length_after_trim}")
         except Exception as e:
-            self.logger.exception(e)
+            self.logger.exception(f"Error fetching chat history for chatroom {chatroom_id}: {e}")
+            chat_history = []
 
         return {"chat_history": chat_history}

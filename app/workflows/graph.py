@@ -41,11 +41,6 @@ class GroupGPTGraph:
         return workflow.compile()
 
     async def process_query(self, request: GroupGPTRequest) -> str:
-    #     self,
-    #     username: str,
-    #     chatroom_id: str,
-    #     content: str
-    # ) -> str:
         initial_state = ChatState(
             username=request.username,
             chatroom_id=request.chatroom_id,

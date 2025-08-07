@@ -11,12 +11,9 @@ async def auth_middleware(request: Request, call_next) -> Response:
     Args:
         request (Request): The request sent by the client.
     """
-    # Allow unauthenticated access to root and documentation endpoints
-    if request.url.path in {"/", "/docs", "redoc", "/openapi.json"}:
-        return await call_next(request)
-
-    # Allow unauthenticated access to static files
-    if request.url.path.startswith("/static/"):
+    # Allow unauthenticated access to root and documentation endpoints, and static files
+    ALLOWED_PATHS = {"/", "/docs", "redoc", "/openapi.json", "/static"}
+    if request.url.path in ALLOWED_PATHS:
         return await call_next(request)
 
     auth_header = request.headers.get("Authorization", None)
@@ -35,7 +32,7 @@ async def auth_middleware(request: Request, call_next) -> Response:
     try:
         token = auth_header.split(' ')[1]
         supabase = get_supabase()
-        supabase.auth.get_user(token)       # JWT validation with Supabase
+        supabase.auth.get_user(token)  # JWT validation with Supabase
     except Exception as e:
         return JSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,

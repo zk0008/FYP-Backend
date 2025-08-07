@@ -39,7 +39,7 @@ class WebSearchTool(BaseTool):
             web_results_text = "\n\n".join([
                 f"Title: {result['title']}\nLink: {result['link']}\nSnippet: {result['snippet']}"
                 for result in web_results
-            ])
+            ]) if web_results else "No results found."
 
             logger.debug(f"Web search executed with the following parameters:\n"
                          f"Query: {query}\n"
