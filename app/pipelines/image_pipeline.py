@@ -82,19 +82,20 @@ class ImagePipeline(BasePipeline):
         try:
             # Process the image to extract its text / generate a description for it
             text = self._process_image(path)
-            self.logger.debug("Successfully processed image")
 
             contents, embeddings = self._create_embeddings(text)
-            self.logger.debug("Successfully created embeddings")
 
             self._insert_document(document_id, filename)
-            self.logger.debug("Successfully inserted document entry to database")
 
             self._insert_embeddings(document_id, contents, embeddings)
-            self.logger.debug("Successfully inserted embeddings entries to database")
 
             self._upload_file_to_supabase(filename, path)
-            self.logger.debug("Successfully uploaded file to Supabase bucket")
+
+            self._notify_chatroom_file_uploaded(
+                filename=filename,
+                uploader_id=self.uploader_id,
+                chatroom_id=self.chatroom_id
+            )
         except RuntimeError as e:
             self.logger.exception(e)
         finally:

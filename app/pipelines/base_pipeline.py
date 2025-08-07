@@ -17,7 +17,7 @@ from app.constants import (
     DEFAULT_CHUNK_OVERLAP,
     EMBEDDING_MODEL_NAME
 )
-from app.dependencies import get_supabase
+from app.dependencies import get_settings, get_supabase
 from app.llms import gemini_2_flash_lite
 from .components.parsers import img_desc_parser, img_desc_reparser
 from .components.prompts import IMAGE_DESCRIPTION_PROMPT
@@ -25,6 +25,7 @@ from .components.prompts import IMAGE_DESCRIPTION_PROMPT
 
 class BasePipeline:
     MAX_RETRIES = 3
+
 
     def __init__(
         self,
@@ -48,6 +49,7 @@ class BasePipeline:
         self.supabase = get_supabase()
         self.logger = logging.getLogger(self.__class__.__name__)
 
+
     def _invoke_model_with_retry(self, message: HumanMessage) -> AIMessage:
         for attempt in range(self.MAX_RETRIES):
             try:
@@ -58,6 +60,7 @@ class BasePipeline:
                     self.logger.warning(f"Model invocation on attempt {attempt + 1} failed. Retrying...", exc_info=True)
                 else:
                     raise RuntimeError(e)
+
 
     def _encode_pil_image_to_base64(self, pil_image: Image.Image, format: str = "PNG") -> str:
         """
@@ -74,6 +77,7 @@ class BasePipeline:
         pil_image.save(buffer, format=format)
         encoded_str = b64encode(buffer.getvalue()).decode("utf-8")
         return encoded_str
+
 
     def _describe_image(self, image_b64_data: str, mime_type: str = "image/png") -> str:
         message = HumanMessage(
@@ -101,6 +105,7 @@ class BasePipeline:
         except Exception as e:
             raise RuntimeError(f"Image description failed with error: {e}")
 
+
     def _create_embeddings(self, text: str) -> Tuple[List[str], List[List[float]]]:
         # Split text into chunks for subsequent embedding
         contents = self.text_splitter.split_text(text)
@@ -109,17 +114,7 @@ class BasePipeline:
         embeddings = self.embedding_model.embed_documents(contents)
 
         return contents, embeddings
-        # contents = []        # Chunked text contents for subsequent embedding
-        # if isinstance(text, str):
-        #     contents = self.text_splitter.split_text(text)
-        # elif isinstance(text, list):
-        #     for item in text:
-        #         item_chunks = self.text_splitter.split_text(item)
-        #         contents.extend(item_chunks)
 
-        # # Create corresponding embedding chunks
-        # embeddings = self.embedding_model.embed_documents(contents)
-        # return contents, embeddings
 
     def _insert_document(self, document_id: str, filename: str) -> dict:
         try:
@@ -159,6 +154,7 @@ class BasePipeline:
         except Exception as e:
             raise RuntimeError(f"Chunk entry insertion failed with error: {e}")
 
+
     def _upload_file_to_supabase(self, filename: str, path: PosixPath | WindowsPath) -> dict:
         try:
             with open(path, "rb") as f:
@@ -174,6 +170,44 @@ class BasePipeline:
             return response
         except Exception as e:
             raise RuntimeError(f"File upload to Supabase bucket failed with error: {e}")
+
+
+    def _notify_chatroom_file_uploaded(self, filename: str, uploader_id: str, chatroom_id: str) -> None:
+        """
+        Notifies the chatroom that a file has been successfully uploaded.
+
+        Args:
+            filename (str): Name of the uploaded file.
+            uploader_id (str): ID of the user who uploaded the file.
+            chatroom_id (str): ID of the chatroom where the file was uploaded.
+        """
+        try:
+            response = (
+                self.supabase.table("users")
+                .select("username")
+                .eq("user_id", uploader_id)
+                .execute()
+            )
+            username = response.data[0]["username"] if response.data else None
+        except Exception as e:
+            raise RuntimeError(f"Failed to retrieve username for user_id {uploader_id}: {e}")
+
+        try:
+            notify_text = f"Hey {username}, your document '{filename}' has been successfully uploaded and added to the knowledge base. You may now query it."
+
+            settings = get_settings()
+            (
+                self.supabase.table("messages")
+                .insert({
+                    "sender_id": settings.GROUPGPT_USER_ID,
+                    "chatroom_id": chatroom_id,
+                    "content": notify_text,
+                })
+                .execute()
+            )
+        except Exception as e:
+            raise RuntimeError(f"Failed to notify chatroom {chatroom_id} about file upload: {e}")
+
 
     def handle_file(self, document_id: str, filename: str, path: PosixPath | WindowsPath):
         raise NotImplementedError
