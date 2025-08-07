@@ -22,7 +22,7 @@ def get_rag_answer(topic: str, query: str):
 
     # Query the Supabase vector table for nearest neighbors
     response = supabase.rpc(
-        "get_similar_embeddings",
+        "get_similar_embeddings_legacy",
         {"query_embedding": query_embedding, "query_topic": topic},
     ).execute()
 

@@ -173,6 +173,7 @@ class PdfPipeline(BasePipeline):
         1. Extract all content from uploaded PDF.
         2. Create embeddings of the extracted content.
         3. Insert document (i.e., the PDF file) and embeddings entries into the database (DB).
+        4. Notifies the chatroom that the file has been successfully uploaded.
 
         Args:
             document_id (str): UUID v4 of the document entry in the DB.
@@ -182,22 +183,23 @@ class PdfPipeline(BasePipeline):
         try:
             # Process the PDF to extract its text / generate descriptions for it
             text = self._extract_from_slide(path) if self._is_slide(path) else self._extract_from_paper(path)
-            self.logger.debug("Successfully processed PDF")
 
             contents, embeddings = self._create_embeddings(text)
-            self.logger.debug("Successfully created embeddings")
 
             self._insert_document(document_id, filename)
-            self.logger.debug("Successfully inserted document entry to database")
 
             self._insert_embeddings(document_id, contents, embeddings)
-            self.logger.debug("Successfully inserted embeddings entries to database")
 
             self._upload_file_to_supabase(filename, path)
-            self.logger.debug("Successfully uploaded file to Supabase bucket")
 
-            remove(path)
-            self.logger.debug("Successfully deleted file from local filesystem")
+            self._notify_chatroom_file_uploaded(
+                filename=filename,
+                uploader_id=self.uploader_id,
+                chatroom_id=self.chatroom_id
+            )
+
+            remove(path)  # Delete file from local storage after processing
+
             self.logger.info("Successfully uploaded file to knowledge base.")
         except Exception as e:
             self.logger.exception(f"Error occurred when extracting text from {filename}: {e}")
