@@ -34,7 +34,7 @@ class ResponseGenerator:
                 1. Use the conversation history to understand the context and flow of prior discussion.
                 1.1. The conversation history consists of multiple users and you. You are the AI, while the users' messages are formatted as "{{username}}: {{message_content}}".
                 1.2. You must keep track of the contexts of each individual user within the chatroom.
-                1.3. Do not start your responses with "GroupGPT:" as that is just a label for your messages in the chat history.
+                1.3. **DO NOT** start your responses with "GroupGPT:" as that is just a label for your messages in the chat history.
 
                 2. **TOOL USAGE**: You have access to the following tools:
                 2.1. *arxiv_search*: Use this tool to search arXiv for academic papers related to the query. This is useful when the user asks about research papers or articles on a specific topic.
@@ -170,6 +170,7 @@ class ResponseGenerator:
         except Exception as e:
             self.logger.exception(e)
 
+
     def __call__(self, state: ChatState) -> ChatState:
         """
         Generates the final response using all available information.
@@ -181,13 +182,17 @@ class ResponseGenerator:
 
         try:
             messages, response = self._handle_tool_calls(messages, state["chatroom_id"])
+
             final_response = response.content.strip()
+
+            # Remove any "GroupGPT:" prefix from the final response
+            if final_response.startswith("GroupGPT:"):
+                final_response = final_response[len("GroupGPT:"):].strip()
 
             if not final_response:
                 final_response = "I apologize, but I encountered an error while generating a response. Please try again."
 
-            self.logger.debug("Successfully generated response")
-            self.logger.debug(response)
+            self.logger.debug(f"Successfully generated response: {final_response[:50]}")
         except Exception as e:
             self.logger.exception(e)
             final_response = "I apologize, but I encountered an error while generating a response. Please try again."
