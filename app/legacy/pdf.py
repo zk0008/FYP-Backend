@@ -1,13 +1,12 @@
-from PyPDF2 import PdfReader
-from langchain.schema import Document
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
-from langchain_text_splitters import CharacterTextSplitter
-from langchain_community.vectorstores import FAISS
-from langchain.chains.question_answering import load_qa_chain
-from typing_extensions import Concatenate
-from dotenv import load_dotenv
 import os
+
+from dotenv import load_dotenv
+from langchain.chains.question_answering import load_qa_chain
+from langchain.schema import Document
+from PyPDF2 import PdfReader
 from supabase import create_client, Client
+
+from app.llms import gpt_4o_mini
 
 load_dotenv()
 url: str = os.environ.get("SUPABASE_URL")
@@ -48,9 +47,7 @@ def get_pdf_answer(topic: str, query: str):
             if content:
                 raw_text += content
 
-    chain = load_qa_chain(
-        ChatOpenAI(model="gpt-4o-mini", temperature=0), chain_type="stuff"
-    )
+    chain = load_qa_chain(gpt_4o_mini, chain_type="stuff")
 
     # docs = document_search.similarity_search(query)
     res = chain.invoke(

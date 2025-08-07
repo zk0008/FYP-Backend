@@ -9,12 +9,12 @@ from supabase import create_client, Client
 from app.legacy.gpt import Chat, get_answer
 from app.legacy.pdf import get_pdf_answer
 from app.legacy.rag import get_rag_answer
+from app.llms import gpt_4o_mini
 
 load_dotenv()
 url: str = os.environ.get('SUPABASE_URL')
 key: str = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
 supabase: Client = create_client(url, key)
-llm = ChatOpenAI(model='gpt-4o-mini', temperature=0.0)
 
 
 def get_summaries(topic: str):
@@ -46,7 +46,7 @@ def can_use_gpt(chats: list[Chat], query: str):
         ),
     ]
 
-    return llm.invoke(messages).content
+    return gpt_4o_mini.invoke(messages).content
 
 
 def can_use_summary(summaries, query: str):
@@ -67,7 +67,7 @@ def can_use_summary(summaries, query: str):
         ),
     ]
 
-    return llm.invoke(messages).content
+    return gpt_4o_mini.invoke(messages).content
 
 
 def get_advanced_answer(chats: list[Chat], topic: str, query: str):

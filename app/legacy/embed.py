@@ -1,17 +1,19 @@
-from PyPDF2 import PdfReader
+import os
+
+from dotenv import load_dotenv
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import CharacterTextSplitter
-from langchain_openai import ChatOpenAI
-from dotenv import load_dotenv
-import os
+from PyPDF2 import PdfReader
 from supabase import create_client, Client
+
+from app.constants import EMBEDDING_MODEL_NAME
+from app.llms import gpt_4o_mini
 
 load_dotenv()
 url: str = os.environ.get("SUPABASE_URL")
 key: str = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 supabase: Client = create_client(url, key)
-embeddings = OpenAIEmbeddings()
-llm = ChatOpenAI(model="gpt-4o-mini")
+embeddings = OpenAIEmbeddings(model=EMBEDDING_MODEL_NAME)
 
 
 def download_pdf(topic: str, file_name: str):
@@ -39,7 +41,7 @@ def summarize_text(text: str) -> str:
         ),
         ("user", f"Please summarize the following PDF text: {text}"),
     ]
-    return llm.invoke(messages).content
+    return gpt_4o_mini.invoke(messages).content
 
 
 def insert_summary_into_supabase(summary: str, topic: str, file_name: str):

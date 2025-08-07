@@ -8,14 +8,15 @@ from typing import Optional, List, Tuple
 import pymupdf
 from pymupdf4llm import to_markdown
 
-from app.constants import MAX_WORKERS
 from app.llms import google_client
 
 from .base_pipeline import BasePipeline
 from .components.prompts import SLIDE_EXTRACTION_PROMPT
 
+
 class PdfPipeline(BasePipeline):
     CHAR_DENSITY_THRESHOLD_PER_SQPT = 0.004
+
 
     def _get_avg_char_density(self, pdf: pymupdf.Document) -> float:
         """
@@ -38,6 +39,7 @@ class PdfPipeline(BasePipeline):
 
         return avg_char_density
 
+
     def _is_slide(self, filepath: str) -> bool:
         """
         Determines if the input document is a slide deck-type or a paper-type PDF.
@@ -51,6 +53,7 @@ class PdfPipeline(BasePipeline):
         pdf = pymupdf.open(filepath)
         avg_char_density = self._get_avg_char_density(pdf)
         return avg_char_density < self.CHAR_DENSITY_THRESHOLD_PER_SQPT
+
 
     def _replace_images_with_descriptions(self, markdown_content: str, max_workers: int = 5) -> str:
         """
@@ -105,6 +108,7 @@ class PdfPipeline(BasePipeline):
 
         return result
 
+
     def _extract_from_paper(self, filepath: str) -> str:
         """
         Extracts all content from a paper-type PDF in Markdown format and generating descriptions for all embedded images using a vision LLM.
@@ -121,6 +125,7 @@ class PdfPipeline(BasePipeline):
             return replaced_text
         except Exception as e:
             raise RuntimeError(f"Error occurred when extracting text from paper-type {filepath}: {e}")
+
 
     def _extract_from_slide(self, filepath: str) -> str:
         """
@@ -143,33 +148,6 @@ class PdfPipeline(BasePipeline):
         except Exception as e:
             raise RuntimeError(f"Error occurred when extracting text from slide deck-type {filepath}: {e}")
 
-        # def process_single_page(page_data):
-        #     page, page_num = page_data
-        #     try:
-        #         pixmap = page.get_pixmap()
-        #         im = pixmap.pil_image()
-        #         image_b64_data = self._encode_pil_image_to_base64(im)
-        #         text = self._describe_image(image_b64_data)
-        #         return page_num, text
-        #     except RuntimeError as e:
-        #         self.logger.exception(f"Error occurred when generating descriptions for page {page_num}: {e}")
-        #         return page_num, None
-        
-        # # Prepare page data with page numbers
-        # page_data = [(page, i) for i, page in enumerate(pdf, start=1)]
-        
-        # texts = [None] * len(page_data)  # Pre-allocated to maintain order
-        
-        # with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        #     future_to_page = {executor.submit(process_single_page, data): data for data in page_data}
-
-        #     for future in concurrent.futures.as_completed(future_to_page):
-        #         page_num, result = future.result()
-        #         if result is not None:
-        #             texts[page_num - 1] = result
-
-        # # Filter out failed pages (None values)
-        # return [text for text in texts if text is not None]
 
     def _process_pdf(self, filepath: str) -> List[str] | str:
         """
@@ -186,6 +164,7 @@ class PdfPipeline(BasePipeline):
             str | List[str]: List of strings that contain descriptions for every slide for slide deck-type documents, or single string containing extracted text in Markdown format for paper-type documents.
         """
         return self._extract_from_slide(filepath) if self._is_slide(filepath) else self._extract_from_paper(filepath)
+
 
     def handle_file(self, document_id: str, filename: str, path: PosixPath | WindowsPath):
         """

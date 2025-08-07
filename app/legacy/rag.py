@@ -1,15 +1,19 @@
-from langchain.schema import Document
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
-from langchain.chains.question_answering import load_qa_chain
-from dotenv import load_dotenv
 import os
+
+from dotenv import load_dotenv
+from langchain.schema import Document
+from langchain_openai import OpenAIEmbeddings
+from langchain.chains.question_answering import load_qa_chain
 from supabase import create_client, Client
+
+from app.constants import EMBEDDING_MODEL_NAME
+from app.llms import gpt_4o_mini
 
 load_dotenv()
 url: str = os.environ.get("SUPABASE_URL")
 key: str = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 supabase: Client = create_client(url, key)
-embeddings = OpenAIEmbeddings()
+embeddings = OpenAIEmbeddings(model=EMBEDDING_MODEL_NAME)
 
 
 def get_rag_answer(topic: str, query: str):
@@ -30,9 +34,8 @@ def get_rag_answer(topic: str, query: str):
 
     print(f"Chunks found for query: {len(similar_texts)}")
     # Use the similar texts for question answering
-    chain = load_qa_chain(
-        ChatOpenAI(model="gpt-4o-mini", temperature=0), chain_type="stuff"
-    )
+    chain = load_qa_chain(gpt_4o_mini, chain_type="stuff")
+
     return chain.invoke(
         {
             "input_documents": similar_texts,
