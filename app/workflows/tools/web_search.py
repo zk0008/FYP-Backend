@@ -35,7 +35,7 @@ class WebSearchTool(BaseTool):
         logger = logging.getLogger(self.__class__.__name__)
 
         try:
-            web_results = search.results(query, num_results)
+            web_results = search.results(query, int(num_results))
             web_results_text = "\n\n".join([
                 f"Title: {result['title']}\nLink: {result['link']}\nSnippet: {result['snippet']}"
                 for result in web_results

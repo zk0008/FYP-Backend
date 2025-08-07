@@ -40,7 +40,7 @@ class ChunkRetrieverTool(BaseTool):
                     "p_chatroom_id": chatroom_id,
                     "query_embedding": query_embedding,
                     "search_query": query,
-                    "match_count": num_chunks  # Number of relevant chunks to retrieve
+                    "match_count": int(num_chunks)  # Number of relevant chunks to retrieve
                 })
                 .execute()
             )
