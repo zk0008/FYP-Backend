@@ -48,7 +48,7 @@ async def upload_file(
 
     original_filename = uploaded_file.filename
     ext = splitext(original_filename)[1].lower()
-    document_id = uuid4()       # Generate random UUID v4 for document's DB entry
+    document_id = uuid4()  # Generate a random UUID v4 for document's DB entry
 
     # Save a copy of uploaded file to disk
     tmp_filename = f"{document_id.hex}{ext}"
@@ -58,16 +58,24 @@ async def upload_file(
 
     if ext in [".pdf"]:
         pipeline = PdfPipeline(uploader_id=uploader_id, chatroom_id=chatroom_id)
-    elif ext in [".jpg", ".jpeg", ".png"]:
+    elif ext in {".jpg", ".jpeg", ".png"}:
         pipeline = ImagePipeline(uploader_id=uploader_id, chatroom_id=chatroom_id)
-    elif ext in [".mp3"]:
+    elif ext in {".mp3"}:
         # TODO: Audio pipeline
+        pass
+    elif ext in {".txt", ".md"}:
+        # TODO: Text pipeline
+        pass
+    elif ext in {".csv", ".xls", ".xlsx"}:
+        # TODO: Spreadsheet pipeline
         pass
     else:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"message": f"Unsupported file type: {ext}"}
         )
+
+    logger.info(f"POST - /upload | Received file: {original_filename} with ID: {document_id}")
 
     bg_tasks.add_task(
         pipeline.handle_file,
