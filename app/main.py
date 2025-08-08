@@ -53,6 +53,8 @@ app = FastAPI(
 )
 logger.info("Successfully started application")
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
@@ -66,8 +68,6 @@ app.include_router(files.router)
 app.include_router(legacy.router)
 app.include_router(queries.router)
 app.include_router(users.router)
-
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
 async def root():
