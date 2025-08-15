@@ -4,7 +4,6 @@ import logging
 from pathlib import PosixPath, WindowsPath
 from typing import List, Tuple
 
-from fastapi import UploadFile
 from langchain_core.exceptions import OutputParserException
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_openai import OpenAIEmbeddings
@@ -155,15 +154,15 @@ class BasePipeline:
             raise RuntimeError(f"Chunk entry insertion failed with error: {e}")
 
 
-    def _upload_file_to_supabase(self, filename: str, path: PosixPath | WindowsPath) -> dict:
+    def _upload_file_to_supabase(self, document_id: str, path: PosixPath | WindowsPath) -> dict:
         try:
             with open(path, "rb") as f:
                 response = (
                     self.supabase.storage
-                    .from_("uploaded-documents")  # Name of bucket
+                    .from_("knowledge-bases")  # Name of bucket
                     .upload(
                         file=f,
-                        path=f"{self.chatroom_id}/{filename}"
+                        path=f"{self.chatroom_id}/{document_id}"
                     )
                 )
 

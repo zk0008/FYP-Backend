@@ -190,7 +190,7 @@ class PdfPipeline(BasePipeline):
 
             self._insert_embeddings(document_id, contents, embeddings)
 
-            self._upload_file_to_supabase(filename, path)
+            self._upload_file_to_supabase(document_id, path)
 
             self._notify_chatroom_file_uploaded(
                 filename=filename,
