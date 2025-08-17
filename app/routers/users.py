@@ -43,7 +43,7 @@ async def delete_user(user_id: str) -> JSONResponse:
         if len(documents.data) > 0:
             (
                 supabase.storage
-                .from_("uploaded-documents")
+                .from_("knowledge-bases")
                 .remove([f"{doc['chatroom_id']}/{doc['document_id']}" for doc in documents.data] + [f"{doc['chatroom_id']}" for doc in documents.data])
             )
 
