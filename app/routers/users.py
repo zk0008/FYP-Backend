@@ -47,6 +47,18 @@ async def delete_user(user_id: str) -> JSONResponse:
                 .remove([f"{doc['chatroom_id']}/{doc['filename']}" for doc in documents.data] + [f"{doc['chatroom_id']}" for doc in documents.data])
             )
 
+        # Delete all attachment files from bucket in all chatrooms owned by the user
+        attachments = (
+            supabase.rpc("get_attachments_in_chatrooms_owned_by_user", {"p_user_id": user_id})
+            .execute()
+        )
+        if len(attachments.data) > 0:
+            (
+                supabase.storage
+                .from_("chatroom-attachments")
+                .remove([f"{att['chatroom_id']}/{att['attachment_id']}" for att in attachments.data] + [f"{att['chatroom_id']}" for att in attachments.data])
+            )
+
         # Delete all chatrooms owned by the user
         (
             supabase.table("chatrooms")
