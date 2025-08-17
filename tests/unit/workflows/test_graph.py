@@ -2,7 +2,6 @@ import pytest
 from unittest.mock import Mock, patch, AsyncMock
 
 from app.workflows.graph import GroupGPTGraph
-from app.models import GroupGPTRequest
 
 pytest_plugins = ('pytest_asyncio')
 
@@ -44,17 +43,15 @@ class TestGroupGPTGraph:
     @pytest.mark.asyncio
     async def test_process_query_success(self, graph):
         """Test successful query processing."""
-        request = GroupGPTRequest(
-            username="test_user",
-            chatroom_id="test_chatroom_id",
-            content="Hello, how are you?"
-        )
-
         graph.graph.ainvoke = AsyncMock(return_value={
             "final_response": "I'm doing well, thank you!"
         })
 
-        result = await graph.process_query(request)
+        result = await graph.process_query(
+            username="test_user",
+            chatroom_id="test_chatroom_id",
+            content="Hello, how are you?"
+        )
 
         assert result == "I'm doing well, thank you!"
         graph.graph.ainvoke.assert_called_once()
@@ -63,15 +60,13 @@ class TestGroupGPTGraph:
     @pytest.mark.asyncio
     async def test_process_query_initial_state(self, graph):
         """Test that initial state is properly constructed."""
-        request = GroupGPTRequest(
+        graph.graph.ainvoke = AsyncMock(return_value={"final_response": "Response"})
+
+        await graph.process_query(
             username="alice",
             chatroom_id="test_chatroom_id",
             content="What's the weather like?"
         )
-
-        graph.graph.ainvoke = AsyncMock(return_value={"final_response": "Response"})
-
-        await graph.process_query(request)
 
         # Verify the initial state passed to graph
         call_args = graph.graph.ainvoke.call_args[0][0]
@@ -84,27 +79,19 @@ class TestGroupGPTGraph:
     @pytest.mark.asyncio
     async def test_process_query_exception(self, graph):
         """Test query processing with exception."""
-        request = GroupGPTRequest(
-            username="test_user",
-            chatroom_id="test_chatroom_id",
-            content="Test query"
-        )
-
         graph.graph.ainvoke = AsyncMock(side_effect=Exception("Graph execution failed"))
 
         with pytest.raises(Exception, match="Graph execution failed"):
-            await graph.process_query(request)
+            await graph.process_query(
+                username="test_user",
+                chatroom_id="test_chatroom_id",
+                content="Test query"
+            )
 
 
     @pytest.mark.asyncio
     async def test_process_query_missing_final_response(self, graph):
         """Test handling when final_response is missing from state."""
-        request = GroupGPTRequest(
-            username="test_user",
-            chatroom_id="test_chatroom_id",
-            content="Test query"
-        )
-
         # Return state without final_response
         graph.graph.ainvoke = AsyncMock(return_value={
             "username": "test_user",
@@ -112,7 +99,11 @@ class TestGroupGPTGraph:
         })
 
         with pytest.raises(KeyError):
-            await graph.process_query(request)
+            await graph.process_query(
+                username="test_user",
+                chatroom_id="test_chatroom_id",
+                content="Test query"
+            )
 
 
     def test_graph_nodes_initialization(self, graph):
