@@ -1,6 +1,5 @@
 import concurrent.futures
 from os import remove
-import os.path as osp
 from pathlib import PosixPath, WindowsPath
 import re
 from typing import Optional, List, Tuple
