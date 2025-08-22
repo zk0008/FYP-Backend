@@ -8,9 +8,9 @@ import pymupdf
 from pymupdf4llm import to_markdown
 
 from app.llms import google_client
+from app.prompts import SLIDE_EXTRACTION_PROMPT
 
 from .base_pipeline import BasePipeline
-from .components.prompts import SLIDE_EXTRACTION_PROMPT
 
 
 class PdfPipeline(BasePipeline):

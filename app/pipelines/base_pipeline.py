@@ -18,8 +18,9 @@ from app.constants import (
 )
 from app.dependencies import get_settings, get_supabase
 from app.llms import gemini_2_flash_lite
+from app.prompts import IMAGE_DESCRIPTION_PROMPT
+
 from .components.parsers import img_desc_parser, img_desc_reparser
-from .components.prompts import IMAGE_DESCRIPTION_PROMPT
 
 
 class BasePipeline:
