@@ -193,7 +193,7 @@ class BasePipeline:
             raise RuntimeError(f"Failed to retrieve username for user_id {uploader_id}: {e}")
 
         try:
-            notify_text = f"Hey {username}, your document '{filename}' has been successfully uploaded and added to my knowledge base. You may now query it."
+            notify_text = f"Hi {username}, your document '{filename}' has been successfully uploaded and added to my knowledge base. You may now query it."
 
             settings = get_settings()
             (
