@@ -31,14 +31,15 @@ class AdvancedRequest(BaseModel):
 @router.post('/advanced')
 async def advanced_prompt(request: AdvancedRequest):
     logger.info(
-        "POST - /advanced | Received advanced request with the following parameters:\n" + 
+        "POST - {router.prefix}/advanced\n" +
+        "Received advanced request with the following parameters:\n" +
         f"Topic: {request.topic}\n" +
         f"Query: {request.query[:50]}{'...' if len(request.query) > 50 else ''}"
     )
 
     res = get_advanced_answer(request.chats, request.topic, request.query)
 
-    logger.info(f"POST - /advanced | Response: {res[:50]}{'...' if len(res) > 50 else ''}")
+    logger.info(f"POST - {router.prefix}/advanced\nResponse: {res[:50]}{'...' if len(res) > 50 else ''}")
 
     return res
 
@@ -46,7 +47,8 @@ async def advanced_prompt(request: AdvancedRequest):
 @router.post('/embed')
 async def embed(request: APIRequest, bg_tasks: BackgroundTasks):
     logger.info(
-        "POST - /embed | Received embedding request with the following parameters:\n" +
+        "POST - {router.prefix}/embed\n" +
+        "Received embedding request with the following parameters:\n" +
         f"Topic: {request.topic}\n" +
         f"Query: {request.query[:50]}{'...' if len(request.query) > 50 else ''}"
     )
@@ -57,14 +59,15 @@ async def embed(request: APIRequest, bg_tasks: BackgroundTasks):
 @router.post('/gpt')
 async def gpt_prompt(request: APIRequest):
     logger.info(
-        "POST - /gpt | Received GPT request with the following parameters:\n" +
+        "POST - {router.prefix}/gpt\n" +
+        "Received GPT request with the following parameters:\n" +
         f"Topic: {request.topic}\n" +
         f"Query: {request.query[:50]}{'...' if len(request.query) > 50 else ''}"
     )
 
     res = get_answer(request.topic, request.query)
 
-    logger.info(f"POST - /gpt | Response: {res[:50]}{'...' if len(res) > 50 else ''}")
+    logger.info(f"POST - {router.prefix}/gpt\nResponse: {res[:50]}{'...' if len(res) > 50 else ''}")
 
     return res
 
@@ -72,14 +75,15 @@ async def gpt_prompt(request: APIRequest):
 @router.post('/pdf')
 async def pdf_prompt(request: APIRequest):
     logger.info(
-        "POST - /pdf | Received PDF request with the following parameters:\n" +
+        "POST - {router.prefix}/pdf\n" +
+        "Received PDF request with the following parameters:\n" +
         f"Topic: {request.topic}\n" +
         f"Query: {request.query[:50]}{'...' if len(request.query) > 50 else ''}"
     )
 
     res = get_pdf_answer(request.topic, request.query)
 
-    logger.info(f"POST - /pdf | Response: {res[:50]}{'...' if len(res) > 50 else ''}")
+    logger.info(f"POST - {router.prefix}/pdf\nResponse: {res[:50]}{'...' if len(res) > 50 else ''}")
 
     return res
 
@@ -87,13 +91,14 @@ async def pdf_prompt(request: APIRequest):
 @router.post('/rag')
 async def rag_prompt(request: APIRequest):
     logger.info(
-        "POST - /rag | Received RAG request with the following parameters:\n" +
+        "POST - {router.prefix}/rag\n" +
+        "Received RAG request with the following parameters:\n" +
         f"Topic: {request.topic}\n" +
         f"Query: {request.query[:50]}{'...' if len(request.query) > 50 else ''}"
     )
 
     res = get_rag_answer(request.topic, request.query)
 
-    logger.info(f"POST - /rag | Response: {res[:50]}{'...' if len(res) > 50 else ''}")
+    logger.info(f"POST - {router.prefix}/rag\nResponse: {res[:50]}{'...' if len(res) > 50 else ''}")
 
     return res

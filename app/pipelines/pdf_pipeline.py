@@ -165,19 +165,19 @@ class PdfPipeline(BasePipeline):
         return self._extract_from_slide(filepath) if self._is_slide(filepath) else self._extract_from_paper(filepath)
 
 
-    def handle_file(self, document_id: str, filename: str, path: PosixPath | WindowsPath):
+    def handle_document(self, document_id: str, filename: str, path: PosixPath | WindowsPath):
         """
-        Handles the uploaded PDF file.
+        Handles the uploaded PDF document.
 
         1. Extract all content from uploaded PDF.
         2. Create embeddings of the extracted content.
         3. Insert document (i.e., the PDF file) and embeddings entries into the database (DB).
-        4. Notifies the chatroom that the file has been successfully uploaded.
+        4. Notifies the chatroom that the document has been successfully uploaded.
 
         Args:
             document_id (str): UUID v4 of the document entry in the DB.
-            filename (str): Name of uploaded PDF file.
-            path (PosixPath | WindowsPath): Path to uploaded PDF file. Has the format: <document_id>.pdf
+            filename (str): Name of uploaded PDF document.
+            path (PosixPath | WindowsPath): Path to uploaded PDF document. Has the format: <document_id>.pdf
         """
         try:
             # Process the PDF to extract its text / generate descriptions for it
@@ -189,9 +189,9 @@ class PdfPipeline(BasePipeline):
 
             self._insert_embeddings(document_id, contents, embeddings)
 
-            self._upload_file_to_supabase(document_id, path)
+            self._upload_document_to_supabase(document_id, path)
 
-            self._notify_chatroom_file_uploaded(
+            self._notify_chatroom_document_uploaded(
                 filename=filename,
                 uploader_id=self.uploader_id,
                 chatroom_id=self.chatroom_id
@@ -199,6 +199,6 @@ class PdfPipeline(BasePipeline):
 
             remove(path)  # Delete file from local storage after processing
 
-            self.logger.info("Successfully uploaded file to knowledge base.")
+            self.logger.info("Successfully uploaded document to knowledge base.")
         except Exception as e:
             self.logger.exception(f"Error occurred when extracting text from {filename}: {e}")

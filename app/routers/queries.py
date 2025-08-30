@@ -6,6 +6,7 @@ from fastapi import (
     APIRouter,
     File,
     Form,
+    HTTPException,
     status,
     UploadFile
 )
@@ -30,11 +31,12 @@ async def invoke_groupgpt(
 ):
     try:
         logger.info(
-            "POST - /groupgpt | Received GroupGPT request with the following parameters:\n" +
+            f"POST - {router.prefix}/groupgpt\n" +
+            "Received GroupGPT request with the following parameters:\n" +
             f"User: {username}\n" +
             f"Chatroom: {chatroom_id}\n" +
             f"Content: {content[:50]}{'...' if len(content) > 50 else ''}\n" +
-            f"Files: {len(files) if files else 0} file(s)"
+            f"Files: {len(files) if files else 0} files"
         )
 
         files_data = []
@@ -58,7 +60,7 @@ async def invoke_groupgpt(
             files_data=files_data
         )
 
-        logger.info(f"POST - /groupgpt | Response: {response[:50]}{'...' if len(response) > 50 else ''}")
+        logger.info(f"POST - {router.prefix}/groupgpt\nResponse: {response[:50]}{'...' if len(response) > 50 else ''}")
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
@@ -66,7 +68,7 @@ async def invoke_groupgpt(
         )
     except Exception as e:
         logger.exception(e)
-        return JSONResponse(
+        raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"message": str(e)}
+            detail=str(e)
         )

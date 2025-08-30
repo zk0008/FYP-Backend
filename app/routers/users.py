@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 
 from app.dependencies import get_supabase
@@ -33,43 +33,40 @@ async def delete_user(user_id: str) -> JSONResponse:
     supabase = get_supabase()
 
     try:
-        logger.info(f"DELETE - /users | Received request to delete user {user_id}")
+        logger.info(f"DELETE - {router.prefix}/users\nReceived request to delete user {user_id}")
 
         # Delete all document files from bucket in all chatrooms owned by the user
-        documents = (
+        documents_response = (
             supabase.rpc("get_documents_in_chatrooms_owned_by_user", {"p_user_id": user_id})
             .execute()
         )
-        if len(documents.data) > 0:
-            (
-                supabase.storage
-                .from_("knowledge-bases")
-                .remove([f"{doc['chatroom_id']}/{doc['document_id']}" for doc in documents.data] + [f"{doc['chatroom_id']}" for doc in documents.data])
-            )
+
+        documents_paths = [
+            f"{doc['chatroom_id']}/{doc['document_id']}" for doc in documents_response.data
+        ] + [
+            f"{doc['chatroom_id']}" for doc in documents_response.data
+        ]
+        (
+            supabase.storage
+            .from_("knowledge-bases")
+            .remove(documents_paths)
+        )
 
         # Delete all attachment files from bucket in all chatrooms owned by the user
-        attachments = (
+        attachments_response = (
             supabase.rpc("get_attachments_in_chatrooms_owned_by_user", {"p_user_id": user_id})
             .execute()
         )
-        if len(attachments.data) > 0:
-            (
-                supabase.storage
-                .from_("attachments")
-                .remove([f"{att['chatroom_id']}/{att['filename']}" for att in attachments.data] + [f"{att['chatroom_id']}" for att in attachments.data])
-            )
-
-        # Delete all attachment files from bucket in all chatrooms owned by the user
-        attachments = (
-            supabase.rpc("get_attachments_in_chatrooms_owned_by_user", {"p_user_id": user_id})
-            .execute()
+        attachments_paths = [
+            f"{att['chatroom_id']}/{att['filename']}" for att in attachments_response.data
+        ] + [
+            f"{att['chatroom_id']}" for att in attachments_response.data
+        ]
+        (
+            supabase.storage
+            .from_("attachments")
+            .remove(attachments_paths)
         )
-        if len(attachments.data) > 0:
-            (
-                supabase.storage
-                .from_("chatroom-attachments")
-                .remove([f"{att['chatroom_id']}/{att['attachment_id']}" for att in attachments.data] + [f"{att['chatroom_id']}" for att in attachments.data])
-            )
 
         # Delete all chatrooms owned by the user
         (
@@ -91,7 +88,7 @@ async def delete_user(user_id: str) -> JSONResponse:
         auth_id = delete_user_response.data[0].get("auth_id")
         supabase.auth.admin.delete_user(auth_id)
 
-        logger.info(f"DELETE - /users | Successfully deleted user {user_id}.")
+        logger.info(f"DELETE - {router.prefix}/users\nSuccessfully deleted user {user_id}.")
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
@@ -99,7 +96,7 @@ async def delete_user(user_id: str) -> JSONResponse:
         )
     except Exception as e:
         logger.exception(f"Error deleting user {user_id}: {e}")
-        return JSONResponse(
+        raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"message": f"Failed to delete user {user_id}: {str(e)}"},
+            detail=f"Failed to delete user {user_id}: {str(e)}"
         )

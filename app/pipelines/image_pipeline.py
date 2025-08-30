@@ -48,7 +48,7 @@ class ImagePipeline(BasePipeline):
         2. If no text is found, generate an image description using Gemini 2.0 Flash-Lite.
 
         Args:
-            image_path (PosixPath | WindowsPath): Path to uplaoded image file.
+            image_path (PosixPath | WindowsPath): Path to uploaded image file.
 
         Returns:
             str: String containing the image contents or its description for subsequent embedding.
@@ -66,7 +66,7 @@ class ImagePipeline(BasePipeline):
         description = self._describe_image(image_b64_data)
         return description
 
-    def handle_file(self, document_id: str, filename: str, path: PosixPath | WindowsPath):
+    def handle_document(self, document_id: str, filename: str, path: PosixPath | WindowsPath):
         """
         Handles the uploaded image file.
 
@@ -89,9 +89,9 @@ class ImagePipeline(BasePipeline):
 
             self._insert_embeddings(document_id, contents, embeddings)
 
-            self._upload_file_to_supabase(document_id, path)
+            self._upload_document_to_supabase(document_id, path)
 
-            self._notify_chatroom_file_uploaded(
+            self._notify_chatroom_document_uploaded(
                 filename=filename,
                 uploader_id=self.uploader_id,
                 chatroom_id=self.chatroom_id
