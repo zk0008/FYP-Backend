@@ -36,40 +36,37 @@ async def delete_user(user_id: str) -> JSONResponse:
         logger.info(f"DELETE - {router.prefix}/users\nReceived request to delete user {user_id}")
 
         # Delete all document files from bucket in all chatrooms owned by the user
-        documents = (
+        documents_response = (
             supabase.rpc("get_documents_in_chatrooms_owned_by_user", {"p_user_id": user_id})
             .execute()
         )
-        if len(documents.data) > 0:
-            (
-                supabase.storage
-                .from_("knowledge-bases")
-                .remove([f"{doc['chatroom_id']}/{doc['document_id']}" for doc in documents.data] + [f"{doc['chatroom_id']}" for doc in documents.data])
-            )
+
+        documents_paths = [
+            f"{doc['chatroom_id']}/{doc['document_id']}" for doc in documents_response.data
+        ] + [
+            f"{doc['chatroom_id']}" for doc in documents_response.data
+        ]
+        (
+            supabase.storage
+            .from_("knowledge-bases")
+            .remove(documents_paths)
+        )
 
         # Delete all attachment files from bucket in all chatrooms owned by the user
-        attachments = (
+        attachments_response = (
             supabase.rpc("get_attachments_in_chatrooms_owned_by_user", {"p_user_id": user_id})
             .execute()
         )
-        if len(attachments.data) > 0:
-            (
-                supabase.storage
-                .from_("attachments")
-                .remove([f"{att['chatroom_id']}/{att['filename']}" for att in attachments.data] + [f"{att['chatroom_id']}" for att in attachments.data])
-            )
-
-        # Delete all attachment files from bucket in all chatrooms owned by the user
-        attachments = (
-            supabase.rpc("get_attachments_in_chatrooms_owned_by_user", {"p_user_id": user_id})
-            .execute()
+        attachments_paths = [
+            f"{att['chatroom_id']}/{att['filename']}" for att in attachments_response.data
+        ] + [
+            f"{att['chatroom_id']}" for att in attachments_response.data
+        ]
+        (
+            supabase.storage
+            .from_("attachments")
+            .remove(attachments_paths)
         )
-        if len(attachments.data) > 0:
-            (
-                supabase.storage
-                .from_("chatroom-attachments")
-                .remove([f"{att['chatroom_id']}/{att['attachment_id']}" for att in attachments.data] + [f"{att['chatroom_id']}" for att in attachments.data])
-            )
 
         # Delete all chatrooms owned by the user
         (
