@@ -155,7 +155,7 @@ class BasePipeline:
             raise RuntimeError(f"Chunk entry insertion failed with error: {e}")
 
 
-    def _upload_file_to_supabase(self, document_id: str, path: PosixPath | WindowsPath) -> dict:
+    def _upload_document_to_supabase(self, document_id: str, path: PosixPath | WindowsPath) -> dict:
         try:
             with open(path, "rb") as f:
                 response = (
@@ -172,14 +172,14 @@ class BasePipeline:
             raise RuntimeError(f"File upload to Supabase bucket failed with error: {e}")
 
 
-    def _notify_chatroom_file_uploaded(self, filename: str, uploader_id: str, chatroom_id: str) -> None:
+    def _notify_chatroom_document_uploaded(self, filename: str, uploader_id: str, chatroom_id: str) -> None:
         """
-        Notifies the chatroom that a file has been successfully uploaded.
+        Notifies the chatroom that a document has been successfully uploaded.
 
         Args:
-            filename (str): Name of the uploaded file.
-            uploader_id (str): ID of the user who uploaded the file.
-            chatroom_id (str): ID of the chatroom where the file was uploaded.
+            filename (str): Name of the uploaded document.
+            uploader_id (str): ID of the user who uploaded the document.
+            chatroom_id (str): ID of the chatroom where the document was uploaded.
         """
         try:
             response = (
@@ -206,8 +206,8 @@ class BasePipeline:
                 .execute()
             )
         except Exception as e:
-            raise RuntimeError(f"Failed to notify chatroom {chatroom_id} about file upload: {e}")
+            raise RuntimeError(f"Failed to notify chatroom {chatroom_id} about document upload: {e}")
 
 
-    def handle_file(self, document_id: str, filename: str, path: PosixPath | WindowsPath):
+    def handle_document(self, document_id: str, filename: str, path: PosixPath | WindowsPath):
         raise NotImplementedError
