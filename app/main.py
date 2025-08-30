@@ -14,7 +14,7 @@ load_dotenv()  # Load environment variables before all other imports
 from app.dependencies import get_settings
 from app.logger import setup_logging
 from app.middlewares import auth_middleware
-from app.routers import files, legacy, queries, users
+from app.routers import files, invites, legacy, queries, users
 from app.workflows import GroupGPTGraph
 
 settings = get_settings()
@@ -65,6 +65,7 @@ app.add_middleware(
 app.add_middleware(BaseHTTPMiddleware, dispatch=auth_middleware)
 
 app.include_router(files.router)
+app.include_router(invites.router)
 app.include_router(legacy.router)
 app.include_router(queries.router)
 app.include_router(users.router)
