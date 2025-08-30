@@ -19,6 +19,7 @@ from app.routers import (
     documents,
     invites,
     legacy,
+    messages,
     queries,
     users
 )
@@ -75,6 +76,7 @@ app.include_router(chatrooms.router)
 app.include_router(documents.router)
 app.include_router(invites.router)
 app.include_router(legacy.router)
+app.include_router(messages.router)
 app.include_router(queries.router)
 app.include_router(users.router)
 
