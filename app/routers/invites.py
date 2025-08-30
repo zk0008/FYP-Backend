@@ -143,8 +143,6 @@ async def accept_invite(request: AcceptInviteRequest):
             content={"message": "Invite accepted successfully"}
         )
 
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"POST - {router.prefix}/accept\nError accepting invite: {str(e)}")
         raise HTTPException(
@@ -214,8 +212,6 @@ async def reject_invite(request: RejectInviteRequest):
             content={"message": "Invite rejected successfully"}
         )
         
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"POST - {router.prefix}/reject\nError rejecting invite: {str(e)}")
         raise HTTPException(
@@ -314,8 +310,6 @@ async def send_invite(request: SendInviteRequest):
             }
         )
 
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"POST - {router.prefix}/send\nError sending invite: {str(e)}")
         raise HTTPException(

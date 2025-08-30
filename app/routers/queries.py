@@ -6,6 +6,7 @@ from fastapi import (
     APIRouter,
     File,
     Form,
+    HTTPException,
     status,
     UploadFile
 )
@@ -35,7 +36,7 @@ async def invoke_groupgpt(
             f"User: {username}\n" +
             f"Chatroom: {chatroom_id}\n" +
             f"Content: {content[:50]}{'...' if len(content) > 50 else ''}\n" +
-            f"Files: {len(files) if files else 0} file{'s' if len(files) != 1 else ''}"
+            f"Files: {len(files) if files else 0} files"
         )
 
         files_data = []
@@ -67,7 +68,7 @@ async def invoke_groupgpt(
         )
     except Exception as e:
         logger.exception(e)
-        return JSONResponse(
+        raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"message": str(e)}
+            detail=str(e)
         )

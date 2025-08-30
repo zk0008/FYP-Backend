@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 
 from app.dependencies import get_supabase
@@ -96,7 +96,7 @@ async def delete_user(user_id: str) -> JSONResponse:
         )
     except Exception as e:
         logger.exception(f"Error deleting user {user_id}: {e}")
-        return JSONResponse(
+        raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"message": f"Failed to delete user {user_id}: {str(e)}"},
+            detail=f"Failed to delete user {user_id}: {str(e)}"
         )

@@ -16,8 +16,26 @@ logger = logging.getLogger(__name__)
 @router.get("/{chatroom_id}")
 async def get_messages(chatroom_id: str):
     """Retrieves all messages for a specific chatroom."""
-    # TODO
-    pass
+    try:
+        supabase = get_supabase()
+
+        messages_response = supabase.rpc("get_chatroom_messages", {"p_chatroom_id": chatroom_id}).execute()
+
+        if messages_response.data is None:
+            messages_response.data = []
+
+        logger.info(f"GET - {router.prefix}/{chatroom_id}\nFound {len(messages_response.data)} message{'s' if len(messages_response.data) != 1 else ''} for chatroom {chatroom_id}")
+
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content=messages_response.data
+        )
+    except Exception as e:
+        logger.error(f"GET - {router.prefix}/{chatroom_id}\nError retrieving messages: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve messages: {str(e)}"
+        )
 
 
 @router.delete("/{chatroom_id}/{message_id}")
@@ -60,8 +78,6 @@ async def delete_message(chatroom_id: str, message_id: str):
                 "chatroom_id": chatroom_id
             }
         )
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"DELETE - {router.prefix}/{chatroom_id}/{message_id}\nError deleting message: {str(e)}")
         raise HTTPException(

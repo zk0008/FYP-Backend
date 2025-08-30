@@ -39,8 +39,6 @@ async def get_chatrooms(user_id: str):
             status_code=status.HTTP_200_OK,
             content=response.data
         )
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"GET - {router.prefix}/user/{user_id}\nError fetching chatrooms: {str(e)}")
         raise HTTPException(
@@ -65,7 +63,10 @@ async def get_chatroom(chatroom_id: str):
 
         if response.data is None:
             logger.warning(f"GET - {router.prefix}/{chatroom_id}\nChatroom not found")
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chatroom not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Chatroom not found"
+            )
 
         logger.info(f"GET - {router.prefix}/{chatroom_id}\nFound chatroom: {response.data.name}")
 
@@ -73,8 +74,6 @@ async def get_chatroom(chatroom_id: str):
             status_code=status.HTTP_200_OK,
             content=response.data
         )
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"GET - {router.prefix}/{chatroom_id}\nError fetching chatroom: {str(e)}")
         raise HTTPException(
@@ -113,8 +112,6 @@ async def create_chatroom(user_id: str, request: CreateChatroomRequest):
             status_code=status.HTTP_201_CREATED,
             content={"chatroom_id": chatroom_id}
         )
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"POST - {router.prefix}/\nError creating chatroom: {str(e)}")
         raise HTTPException(
@@ -138,7 +135,10 @@ async def edit_chatroom(chatroom_id: str, request: EditChatroomRequest):
 
         if response.data is None or len(response.data) == 0:
             logger.warning(f"PUT - {router.prefix}/{chatroom_id}\nChatroom not found for update")
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chatroom not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Chatroom not found"
+            )
 
         logger.info(f"PUT - {router.prefix}/{chatroom_id}\nUpdated chatroom name to: {request.name}")
 
@@ -150,8 +150,6 @@ async def edit_chatroom(chatroom_id: str, request: EditChatroomRequest):
                 "new_name": request.name
             }
         )
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"PUT - {router.prefix}/{chatroom_id}\nError updating chatroom: {str(e)}")
         raise HTTPException(
@@ -211,8 +209,6 @@ async def delete_chatroom(chatroom_id: str):
             }
         )
 
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"DELETE - {router.prefix}/{chatroom_id}\nError deleting chatroom: {str(e)}")
         raise HTTPException(
@@ -238,7 +234,10 @@ async def remove_member(chatroom_id: str, user_id: str):
 
         if response.data is None or len(response.data) == 0:
             logger.warning(f"DELETE - {router.prefix}/{chatroom_id}/user/{user_id}\nUser not found")
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
 
         logger.info(f"DELETE - {router.prefix}/{chatroom_id}/user/{user_id}\nRemoved user {user_id} from chatroom {chatroom_id}")
 
@@ -246,8 +245,6 @@ async def remove_member(chatroom_id: str, user_id: str):
             status_code=status.HTTP_200_OK,
             content={"message": "User removed successfully"}
         )
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"DELETE - {router.prefix}/{chatroom_id}/user/{user_id}\nError removing member: {str(e)}")
         raise HTTPException(

@@ -1,4 +1,4 @@
-from fastapi import Request, Response, status
+from fastapi import HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 
 from app.dependencies import get_supabase
@@ -22,15 +22,15 @@ async def auth_middleware(request: Request, call_next) -> Response:
 
     auth_header = request.headers.get("Authorization", None)
     if not auth_header:
-        return JSONResponse(
+        raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"message": "Missing Authorization header in request"}
+            detail="Missing Authorization header in request"
         )
     
     if not auth_header.startswith("Bearer "):
-        return JSONResponse(
+        raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"message": "Invalid Authorization header format"}
+            detail="Invalid Authorization header format"
         )
 
     try:
@@ -38,9 +38,9 @@ async def auth_middleware(request: Request, call_next) -> Response:
         supabase = get_supabase()
         supabase.auth.get_user(token)  # JWT validation with Supabase
     except Exception as e:
-        return JSONResponse(
+        raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            content={"message": str(e)}
+            detail=str(e)
         )
 
     response = await call_next(request)
