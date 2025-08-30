@@ -330,18 +330,16 @@ async def get_pending_invites(user_id: str):
     try:
         supabase = get_supabase()
 
-        logger.info(f"GET - {router.prefix}/{user_id}\nFetching pending invites")
-
         response = supabase.rpc("get_user_pending_invites", {"p_user_id": user_id}).execute()
 
         if response.data is None:
             response.data = []
 
-        logger.info(f"GET - {router.prefix}/{user_id}\nFound {len(response.data)} pending invite{'s' if len(response.data) != 1 else ''}")
+        logger.info(f"GET - {router.prefix}/{user_id}\nFound {len(response.data)} pending invite{'s' if len(response.data) != 1 else ''} for {user_id}")
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content={"invites": response.data}
+            content=response.data
         )
 
     except Exception as e:

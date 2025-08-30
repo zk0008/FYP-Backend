@@ -24,7 +24,6 @@ router = APIRouter(
     tags=["documents"],
 )
 
-
 logger = logging.getLogger(__name__)
 
 # Create tmp_files directory
@@ -112,7 +111,7 @@ async def get_documents(chatroom_id: str):
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content={"documents": response.data}
+            content=response.data
         )
     except Exception as e:
         logger.error(f"GET - {router.prefix}/{chatroom_id}\nError: {e}")
