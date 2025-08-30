@@ -1,6 +1,7 @@
 from base64 import b64encode
 from io import BytesIO
 import logging
+import mimetypes
 from pathlib import PosixPath, WindowsPath
 from typing import List, Tuple
 
@@ -157,13 +158,18 @@ class BasePipeline:
 
     def _upload_document_to_supabase(self, document_id: str, path: PosixPath | WindowsPath) -> dict:
         try:
+            mime_type, _ = mimetypes.guess_type(path)
+
             with open(path, "rb") as f:
                 response = (
                     self.supabase.storage
                     .from_("knowledge-bases")  # Name of bucket
                     .upload(
                         file=f,
-                        path=f"{self.chatroom_id}/{document_id}"
+                        path=f"{self.chatroom_id}/{document_id}",
+                        file_options={
+                            "content-type": mime_type
+                        }
                     )
                 )
 
