@@ -33,7 +33,7 @@ async def delete_user(user_id: str) -> JSONResponse:
     supabase = get_supabase()
 
     try:
-        logger.info(f"DELETE - /users | Received request to delete user {user_id}")
+        logger.info(f"DELETE - {router.prefix}/users\nReceived request to delete user {user_id}")
 
         # Delete all document files from bucket in all chatrooms owned by the user
         documents = (
@@ -91,7 +91,7 @@ async def delete_user(user_id: str) -> JSONResponse:
         auth_id = delete_user_response.data[0].get("auth_id")
         supabase.auth.admin.delete_user(auth_id)
 
-        logger.info(f"DELETE - /users | Successfully deleted user {user_id}.")
+        logger.info(f"DELETE - {router.prefix}/users\nSuccessfully deleted user {user_id}.")
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,

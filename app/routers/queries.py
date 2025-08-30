@@ -30,7 +30,7 @@ async def invoke_groupgpt(
 ):
     try:
         logger.info(
-            "POST - /groupgpt | Received GroupGPT request with the following parameters:\n" +
+            "POST - {router.prefix}/groupgpt\nReceived GroupGPT request with the following parameters:\n" +
             f"User: {username}\n" +
             f"Chatroom: {chatroom_id}\n" +
             f"Content: {content[:50]}{'...' if len(content) > 50 else ''}\n" +
@@ -58,7 +58,7 @@ async def invoke_groupgpt(
             files_data=files_data
         )
 
-        logger.info(f"POST - /groupgpt | Response: {response[:50]}{'...' if len(response) > 50 else ''}")
+        logger.info(f"POST - {router.prefix}/groupgpt\nResponse: {response[:50]}{'...' if len(response) > 50 else ''}")
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,

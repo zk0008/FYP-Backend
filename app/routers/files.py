@@ -75,7 +75,7 @@ async def upload_file(
             content={"message": f"Unsupported file type: {ext}"}
         )
 
-    logger.info(f"POST - /upload | Received file: {original_filename} with ID: {document_id}")
+    logger.info(f"POST - {router.prefix}/upload\nReceived file: {original_filename} with ID: {document_id}")
 
     bg_tasks.add_task(
         pipeline.handle_file,
