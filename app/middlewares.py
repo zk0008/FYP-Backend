@@ -1,5 +1,4 @@
 from fastapi import HTTPException, Request, Response, status
-from fastapi.responses import JSONResponse
 
 from app.dependencies import get_supabase
 
