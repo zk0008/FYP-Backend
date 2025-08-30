@@ -337,23 +337,11 @@ async def get_pending_invites(user_id: str):
         if response.data is None:
             response.data = []
 
-        # Transform the data to match frontend expectations
-        invites = []
-        for item in response.data:
-            invites.append({
-                "invite_id": item["invite_id"],
-                "sender_username": item["sender_username"],
-                "chatroom_id": item["chatroom_id"],
-                "chatroom_name": item["chatroom_name"],
-                "status": item["status"],
-                "created_at": item["created_at"]
-            })
-
-        logger.info(f"GET - {router.prefix}/{user_id}\nFound {len(invites)} pending invite{'s' if len(invites) != 1 else ''}")
+        logger.info(f"GET - {router.prefix}/{user_id}\nFound {len(response.data)} pending invite{'s' if len(response.data) != 1 else ''}")
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content={"invites": invites}
+            content={"invites": response.data}
         )
 
     except Exception as e:
