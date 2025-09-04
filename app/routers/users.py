@@ -46,11 +46,12 @@ async def delete_user(user_id: str) -> JSONResponse:
         ] + [
             f"{doc['chatroom_id']}" for doc in documents_response.data
         ]
-        (
-            supabase.storage
-            .from_("knowledge-bases")
-            .remove(documents_paths)
-        )
+        if len(documents_paths) > 0:
+            (
+                supabase.storage
+                .from_("knowledge-bases")
+                .remove(documents_paths)
+            )
 
         # Delete all attachment files from bucket in all chatrooms owned by the user
         attachments_response = (
@@ -62,11 +63,12 @@ async def delete_user(user_id: str) -> JSONResponse:
         ] + [
             f"{att['chatroom_id']}" for att in attachments_response.data
         ]
-        (
-            supabase.storage
-            .from_("attachments")
-            .remove(attachments_paths)
-        )
+        if len(attachments_paths) > 0:
+            (
+                supabase.storage
+                .from_("attachments")
+                .remove(attachments_paths)
+            )
 
         # Delete all chatrooms owned by the user
         (
