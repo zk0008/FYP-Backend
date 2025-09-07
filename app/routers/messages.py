@@ -34,7 +34,7 @@ async def get_messages(chatroom_id: str):
         logger.error(f"GET - {router.prefix}/{chatroom_id}\nError retrieving messages: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve messages: {str(e)}"
+            detail=e.detail if hasattr(e, 'detail') else str(e)
         )
 
 
@@ -82,5 +82,5 @@ async def delete_message(chatroom_id: str, message_id: str):
         logger.error(f"DELETE - {router.prefix}/{chatroom_id}/{message_id}\nError deleting message: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete message: {str(e)}"
+            detail=e.detail if hasattr(e, 'detail') else str(e)
         )

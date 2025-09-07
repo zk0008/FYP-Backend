@@ -70,5 +70,5 @@ async def invoke_groupgpt(
         logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            detail=e.detail if hasattr(e, 'detail') else str(e)
         )

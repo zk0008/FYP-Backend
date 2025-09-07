@@ -43,7 +43,7 @@ async def get_chatrooms(user_id: str):
         logger.error(f"GET - {router.prefix}/user/{user_id}\nError fetching chatrooms: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch chatrooms: {str(e)}"
+            detail=e.detail if hasattr(e, 'detail') else str(e)
         )
 
 
@@ -78,7 +78,7 @@ async def get_chatroom(chatroom_id: str):
         logger.error(f"GET - {router.prefix}/{chatroom_id}\nError fetching chatroom: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch chatroom: {str(e)}"
+            detail=e.detail if hasattr(e, 'detail') else str(e)
         )
 
 
@@ -116,7 +116,7 @@ async def create_chatroom(user_id: str, request: CreateChatroomRequest):
         logger.error(f"POST - {router.prefix}/\nError creating chatroom: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create chatroom: {str(e)}"
+            detail=e.detail if hasattr(e, 'detail') else str(e)
         )
 
 
@@ -154,7 +154,7 @@ async def edit_chatroom(chatroom_id: str, request: EditChatroomRequest):
         logger.error(f"PUT - {router.prefix}/{chatroom_id}\nError updating chatroom: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update chatroom: {str(e)}"
+            detail=e.detail if hasattr(e, 'detail') else str(e)
         )
 
 
@@ -213,7 +213,7 @@ async def delete_chatroom(chatroom_id: str):
         logger.error(f"DELETE - {router.prefix}/{chatroom_id}\nError deleting chatroom: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete chatroom: {str(e)}"
+            detail=e.detail if hasattr(e, 'detail') else str(e)
         )
 
 
@@ -249,5 +249,5 @@ async def remove_member(chatroom_id: str, user_id: str):
         logger.error(f"DELETE - {router.prefix}/{chatroom_id}/user/{user_id}\nError removing member: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to remove member: {str(e)}"
+            detail=e.detail if hasattr(e, 'detail') else str(e)
         )

@@ -39,7 +39,7 @@ async def auth_middleware(request: Request, call_next) -> Response:
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e)
+            detail=e.detail if hasattr(e, 'detail') else "Invalid token"
         )
 
     try:
