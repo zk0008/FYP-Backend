@@ -20,7 +20,6 @@ from app.routers import (
     invites,
     legacy,
     messages,
-    queries,
     users
 )
 from app.workflows import GroupGPTGraph
@@ -77,7 +76,6 @@ app.include_router(documents.router)
 app.include_router(invites.router)
 app.include_router(legacy.router)
 app.include_router(messages.router)
-app.include_router(queries.router)
 app.include_router(users.router)
 
 @app.get("/")
