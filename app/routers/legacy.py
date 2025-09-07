@@ -39,7 +39,7 @@ async def advanced_prompt(request: AdvancedRequest):
 
     res = get_advanced_answer(request.chats, request.topic, request.query)
 
-    logger.info(f"POST - {router.prefix}/advanced\nResponse: {res[:50]}{'...' if len(res) > 50 else ''}")
+    logger.debug(f"POST - {router.prefix}/advanced\nResponse: {res[:50]}{'...' if len(res) > 50 else ''}")
 
     return res
 
@@ -67,7 +67,7 @@ async def gpt_prompt(request: APIRequest):
 
     res = get_answer(request.topic, request.query)
 
-    logger.info(f"POST - {router.prefix}/gpt\nResponse: {res[:50]}{'...' if len(res) > 50 else ''}")
+    logger.debug(f"POST - {router.prefix}/gpt\nResponse: {res[:50]}{'...' if len(res) > 50 else ''}")
 
     return res
 
@@ -83,7 +83,7 @@ async def pdf_prompt(request: APIRequest):
 
     res = get_pdf_answer(request.topic, request.query)
 
-    logger.info(f"POST - {router.prefix}/pdf\nResponse: {res[:50]}{'...' if len(res) > 50 else ''}")
+    logger.debug(f"POST - {router.prefix}/pdf\nResponse: {res[:50]}{'...' if len(res) > 50 else ''}")
 
     return res
 
@@ -99,6 +99,6 @@ async def rag_prompt(request: APIRequest):
 
     res = get_rag_answer(request.topic, request.query)
 
-    logger.info(f"POST - {router.prefix}/rag\nResponse: {res[:50]}{'...' if len(res) > 50 else ''}")
+    logger.debug(f"POST - {router.prefix}/rag\nResponse: {res[:50]}{'...' if len(res) > 50 else ''}")
 
     return res

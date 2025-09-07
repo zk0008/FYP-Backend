@@ -34,7 +34,7 @@ async def get_chatrooms(request: Request) -> JSONResponse:
         if response.data is None:
             response.data = []
 
-        logger.info(f"GET - {router.prefix}\nFound {len(response.data)} chatroom{'s' if len(response.data) != 1 else ''} for user {user_id}")
+        logger.debug(f"GET - {router.prefix}\nFound {len(response.data)} chatroom{'s' if len(response.data) != 1 else ''} for user {user_id}")
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
@@ -69,7 +69,7 @@ async def get_chatroom(chatroom_id: str) -> JSONResponse:
                 detail="Chatroom not found"
             )
 
-        logger.info(f"GET - {router.prefix}/{chatroom_id}\nFound chatroom: {response.data.name}")
+        logger.debug(f"GET - {router.prefix}/{chatroom_id}\nFound chatroom: {response.data.name}")
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
@@ -108,7 +108,7 @@ async def create_chatroom(request: Request, body: CreateChatroomRequest) -> JSON
                 "user_id": user_id
             }).execute()
 
-        logger.info(f"POST - {router.prefix}\nUser {user_id} created chatroom: {body.name}")
+        logger.debug(f"POST - {router.prefix}\nUser {user_id} created chatroom: {body.name}")
 
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
@@ -142,7 +142,7 @@ async def edit_chatroom(chatroom_id: str, body: EditChatroomRequest) -> JSONResp
                 detail="Chatroom not found"
             )
 
-        logger.info(f"PUT - {router.prefix}/{chatroom_id}\nUpdated chatroom name to: {body.name}")
+        logger.debug(f"PUT - {router.prefix}/{chatroom_id}\nUpdated chatroom name to: {body.name}")
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
@@ -241,7 +241,7 @@ async def remove_member(chatroom_id: str, user_id: str) -> JSONResponse:
                 detail="User not found"
             )
 
-        logger.info(f"DELETE - {router.prefix}/{chatroom_id}/user/{user_id}\nRemoved user {user_id} from chatroom {chatroom_id}")
+        logger.debug(f"DELETE - {router.prefix}/{chatroom_id}/user/{user_id}\nRemoved user {user_id} from chatroom {chatroom_id}")
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,

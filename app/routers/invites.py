@@ -44,7 +44,7 @@ async def get_pending_invites(request: Request) -> JSONResponse:
         if response.data is None:
             response.data = []
 
-        logger.info(f"GET - {router.prefix}\nFound {len(response.data)} pending invite{'s' if len(response.data) != 1 else ''} for {user_id}")
+        logger.debug(f"GET - {router.prefix}\nFound {len(response.data)} pending invite{'s' if len(response.data) != 1 else ''} for {user_id}")
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
@@ -66,7 +66,7 @@ async def send_invite(request: Request, body: SendInviteRequest) -> JSONResponse
         user_id = request.state.user_id
         supabase = get_supabase()
 
-        logger.info(f"POST - {router.prefix}\nSending invite from {user_id} to {body.recipient_username} for chatroom {body.chatroom_id}")
+        logger.debug(f"POST - {router.prefix}\nSending invite from {user_id} to {body.recipient_username} for chatroom {body.chatroom_id}")
 
         # Get recipient user ID by username
         user_response = (
@@ -140,7 +140,7 @@ async def send_invite(request: Request, body: SendInviteRequest) -> JSONResponse
                 detail="Failed to create invite."
             )
 
-        logger.info(f"POST - {router.prefix}\nSuccessfully sent invite {invite_response.data[0]['invite_id']}")
+        logger.debug(f"POST - {router.prefix}\nSuccessfully sent invite {invite_response.data[0]['invite_id']}")
 
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
@@ -165,7 +165,7 @@ async def update_invite(request: Request, invite_id: str, body: UpdateInviteRequ
         user_id = request.state.user_id
         supabase = get_supabase()
 
-        logger.info(f"PUT - {router.prefix}/{invite_id}\nUser {user_id} updating invite {invite_id} to {body.status}")
+        logger.debug(f"PUT - {router.prefix}/{invite_id}\nUser {user_id} updating invite {invite_id} to {body.status}")
 
         if body.status not in ["ACCEPTED", "REJECTED"]:
             raise HTTPException(
@@ -259,7 +259,7 @@ async def update_invite(request: Request, invite_id: str, body: UpdateInviteRequ
             # No additional action needed for rejection
             pass
 
-        logger.info(f"PUT - {router.prefix}/{invite_id}\nSuccessfully updated invite {invite_id} to {body.status}")
+        logger.debug(f"PUT - {router.prefix}/{invite_id}\nSuccessfully updated invite {invite_id} to {body.status}")
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,

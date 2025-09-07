@@ -52,7 +52,7 @@ async def upload_document(
 
     original_filename = uploaded_document.filename
     ext = splitext(original_filename)[1].lower()
-    document_id = uuid4()  # Generate a random UUID v4 for document"s DB entry
+    document_id = uuid4()  # Generate a random UUID v4 for document DB entry
 
     # Save a copy of uploaded file to disk
     tmp_filename = f"{document_id.hex}{ext}"
@@ -79,7 +79,7 @@ async def upload_document(
             detail=f"Unsupported file type: {ext}"
         )
 
-    logger.info(f"POST - {router.prefix}\nReceived file: {original_filename} with ID: {document_id}")
+    logger.debug(f"POST - {router.prefix}\nReceived file: {original_filename} with ID: {document_id}")
 
     bg_tasks.add_task(
         pipeline.handle_document,
@@ -89,7 +89,7 @@ async def upload_document(
     )
 
     return JSONResponse(
-        status_code=status.HTTP_200_OK,
+        status_code=status.HTTP_201_CREATED,
         content={
             "message": "Document uploaded. Processing started.",
             "document_id": str(document_id)
@@ -107,7 +107,7 @@ async def get_documents(chatroom_id: str) -> JSONResponse:
         if response.data is None:
             response.data = []
 
-        logger.info(f"GET - {router.prefix}\nRetrieved {len(response.data)} document{'s' if len(response.data) != 1 else ''}")
+        logger.debug(f"GET - {router.prefix}\nRetrieved {len(response.data)} document{'s' if len(response.data) != 1 else ''}")
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
@@ -141,7 +141,7 @@ async def delete_document(document_id: str) -> JSONResponse:
             .remove([f"{document_response.data[0]['chatroom_id']}/{document_id}"])
         )
 
-        logger.info(f"DELETE - {router.prefix}/{document_id}\nDeleted document")
+        logger.debug(f"DELETE - {router.prefix}/{document_id}\nDeleted document")
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
