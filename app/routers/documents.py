@@ -10,6 +10,7 @@ from fastapi import (
     File,
     Form,
     HTTPException,
+    Request,
     status,
     UploadFile
 )
@@ -33,13 +34,13 @@ TMP_FILES_DIR.mkdir(exist_ok=True)
 logger.info("Successfully created tmp_files directory")
 
 
-@router.post("/{chatroom_id}")
+@router.post("")
 async def upload_document(
-    chatroom_id: str,
+    request: Request,
     uploaded_document: UploadFile = File(...),
-    uploader_id: str = Form(...),
+    chatroom_id: str = Form(...),
     bg_tasks: BackgroundTasks = BackgroundTasks()
-):
+) -> JSONResponse:
     """Uploads a document to the specified chatroom."""
     file_size_mb = uploaded_document.size / 1_000_000
 
@@ -60,9 +61,9 @@ async def upload_document(
         shutil.copyfileobj(uploaded_document.file, buffer)
 
     if ext in [".pdf"]:
-        pipeline = PdfPipeline(uploader_id=uploader_id, chatroom_id=chatroom_id)
+        pipeline = PdfPipeline(uploader_id=request.state.user_id, chatroom_id=chatroom_id)
     elif ext in {".jpg", ".jpeg", ".png"}:
-        pipeline = ImagePipeline(uploader_id=uploader_id, chatroom_id=chatroom_id)
+        pipeline = ImagePipeline(uploader_id=request.state.user_id, chatroom_id=chatroom_id)
     elif ext in {".mp3"}:
         # TODO: Audio pipeline
         pass
@@ -91,13 +92,12 @@ async def upload_document(
         status_code=status.HTTP_200_OK,
         content={
             "message": "Document uploaded. Processing started.",
-            "filename": original_filename,
             "document_id": str(document_id)
         }
     )
 
-@router.get("/{chatroom_id}")
-async def get_documents(chatroom_id: str):
+@router.get("")
+async def get_documents(chatroom_id: str) -> JSONResponse:
     """Retrieves all documents for a specific chatroom."""
     try:
         supabase = get_supabase()
@@ -107,27 +107,27 @@ async def get_documents(chatroom_id: str):
         if response.data is None:
             response.data = []
 
-        logger.info(f"GET - {router.prefix}/{chatroom_id}\nRetrieved {len(response.data)} document{'s' if len(response.data) != 1 else ''}")
+        logger.info(f"GET - {router.prefix}\nRetrieved {len(response.data)} document{'s' if len(response.data) != 1 else ''}")
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content=response.data
         )
     except Exception as e:
-        logger.error(f"GET - {router.prefix}/{chatroom_id}\nError: {e}")
-        return JSONResponse(
+        logger.error(f"GET - {router.prefix}\nError: {e}")
+        raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"message": "Error retrieving documents"}
+            detail=e.detail if hasattr(e, 'detail') else str(e)
         )
 
-@router.delete("/{chatroom_id}/{document_id}")
-async def delete_document(chatroom_id: str, document_id: str):
+@router.delete("/{document_id}")
+async def delete_document(document_id: str) -> JSONResponse:
     """Deletes a document (both the DB entry and the raw file)."""
     try:
         supabase = get_supabase()
 
         # Delete document entry in DB
-        (
+        document_response = (
             supabase.table("documents")
             .delete()
             .eq("document_id", document_id)
@@ -138,7 +138,7 @@ async def delete_document(chatroom_id: str, document_id: str):
         (
             supabase.storage
             .from_("knowledge-bases")
-            .remove([f"{chatroom_id}/{document_id}"])
+            .remove([f"{document_response.data[0]['chatroom_id']}/{document_id}"])
         )
 
         logger.info(f"DELETE - {router.prefix}/{document_id}\nDeleted document")
@@ -154,5 +154,5 @@ async def delete_document(chatroom_id: str, document_id: str):
         logger.error(f"DELETE - {router.prefix}/{document_id}\nError: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete document: {str(e)}"
+            detail=e.detail if hasattr(e, 'detail') else str(e)
         )

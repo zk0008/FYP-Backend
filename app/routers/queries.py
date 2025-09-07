@@ -28,7 +28,7 @@ async def invoke_groupgpt(
     chatroom_id: str = Form(...),
     content: str = Form(...),
     files: Optional[List[UploadFile]] = File(None)
-):
+) -> JSONResponse:
     try:
         logger.info(
             f"POST - {router.prefix}/groupgpt\n" +
@@ -70,5 +70,5 @@ async def invoke_groupgpt(
         logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            detail=e.detail if hasattr(e, 'detail') else str(e)
         )

@@ -100,5 +100,5 @@ async def delete_user(user_id: str) -> JSONResponse:
         logger.exception(f"Error deleting user {user_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete user {user_id}: {str(e)}"
+            detail=e.detail if hasattr(e, 'detail') else str(e)
         )

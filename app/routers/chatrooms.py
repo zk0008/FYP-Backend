@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -22,10 +22,11 @@ class EditChatroomRequest(BaseModel):
     name: str
 
 
-@router.get("/user/{user_id}")
-async def get_chatrooms(user_id: str):
+@router.get("")
+async def get_chatrooms(request: Request) -> JSONResponse:
     """Retrieves the chatrooms for a specific user."""
     try:
+        user_id = request.state.user_id
         supabase = get_supabase()
 
         response = supabase.rpc("get_user_chatrooms_ordered", {"p_user_id": user_id}).execute()
@@ -33,22 +34,22 @@ async def get_chatrooms(user_id: str):
         if response.data is None:
             response.data = []
 
-        logger.info(f"GET - {router.prefix}/user/{user_id}\nFound {len(response.data)} chatroom{'s' if len(response.data) != 1 else ''} for user {user_id}")
+        logger.info(f"GET - {router.prefix}\nFound {len(response.data)} chatroom{'s' if len(response.data) != 1 else ''} for user {user_id}")
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content=response.data
         )
     except Exception as e:
-        logger.error(f"GET - {router.prefix}/user/{user_id}\nError fetching chatrooms: {str(e)}")
+        logger.error(f"GET - {router.prefix}\nError fetching chatrooms: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch chatrooms: {str(e)}"
+            detail=e.detail if hasattr(e, 'detail') else str(e)
         )
 
 
 @router.get("/{chatroom_id}")
-async def get_chatroom(chatroom_id: str):
+async def get_chatroom(chatroom_id: str) -> JSONResponse:
     """Retrieves a specific chatroom."""
     try:
         supabase = get_supabase()
@@ -78,14 +79,15 @@ async def get_chatroom(chatroom_id: str):
         logger.error(f"GET - {router.prefix}/{chatroom_id}\nError fetching chatroom: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch chatroom: {str(e)}"
+            detail=e.detail if hasattr(e, 'detail') else str(e)
         )
 
 
-@router.post("/user/{user_id}")
-async def create_chatroom(user_id: str, request: CreateChatroomRequest):
+@router.post("")
+async def create_chatroom(request: Request, body: CreateChatroomRequest) -> JSONResponse:
     """Creates a new chatroom."""
     try:
+        user_id = request.state.user_id
         supabase = get_supabase()
 
         # Insert new chatroom entry into DB
@@ -93,7 +95,7 @@ async def create_chatroom(user_id: str, request: CreateChatroomRequest):
             supabase.table("chatrooms")
             .insert({
                 "creator_id": user_id,
-                "name": request.name
+                "name": body.name
             })
             .execute()
         )
@@ -106,7 +108,7 @@ async def create_chatroom(user_id: str, request: CreateChatroomRequest):
                 "user_id": user_id
             }).execute()
 
-        logger.info(f"POST - {router.prefix}/\nUser {user_id} created chatroom: {request.name}")
+        logger.info(f"POST - {router.prefix}\nUser {user_id} created chatroom: {body.name}")
 
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
@@ -116,19 +118,19 @@ async def create_chatroom(user_id: str, request: CreateChatroomRequest):
         logger.error(f"POST - {router.prefix}/\nError creating chatroom: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create chatroom: {str(e)}"
+            detail=e.detail if hasattr(e, 'detail') else str(e)
         )
 
 
 @router.put("/{chatroom_id}")
-async def edit_chatroom(chatroom_id: str, request: EditChatroomRequest):
+async def edit_chatroom(chatroom_id: str, body: EditChatroomRequest) -> JSONResponse:
     """Edits an existing chatroom."""
     try:
         supabase = get_supabase()
 
         response = (
             supabase.table("chatrooms")
-            .update({"name": request.name})
+            .update({"name": body.name})
             .eq("chatroom_id", chatroom_id)
             .execute()
         )
@@ -140,26 +142,26 @@ async def edit_chatroom(chatroom_id: str, request: EditChatroomRequest):
                 detail="Chatroom not found"
             )
 
-        logger.info(f"PUT - {router.prefix}/{chatroom_id}\nUpdated chatroom name to: {request.name}")
+        logger.info(f"PUT - {router.prefix}/{chatroom_id}\nUpdated chatroom name to: {body.name}")
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content={
                 "message": "Chatroom updated successfully",
                 "chatroom_id": chatroom_id,
-                "new_name": request.name
+                "new_name": body.name
             }
         )
     except Exception as e:
         logger.error(f"PUT - {router.prefix}/{chatroom_id}\nError updating chatroom: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update chatroom: {str(e)}"
+            detail=e.detail if hasattr(e, 'detail') else str(e)
         )
 
 
 @router.delete("/{chatroom_id}")
-async def delete_chatroom(chatroom_id: str):
+async def delete_chatroom(chatroom_id: str) -> JSONResponse:
     """Deletes a chatroom."""
     try:
         supabase = get_supabase()
@@ -213,12 +215,12 @@ async def delete_chatroom(chatroom_id: str):
         logger.error(f"DELETE - {router.prefix}/{chatroom_id}\nError deleting chatroom: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete chatroom: {str(e)}"
+            detail=e.detail if hasattr(e, 'detail') else str(e)
         )
 
 
 @router.delete("/{chatroom_id}/user/{user_id}")
-async def remove_member(chatroom_id: str, user_id: str):
+async def remove_member(chatroom_id: str, user_id: str) -> JSONResponse:
     """Removes a user from a chatroom (i.e., leaving the chatroom)."""
     try:
         supabase = get_supabase()
@@ -249,5 +251,5 @@ async def remove_member(chatroom_id: str, user_id: str):
         logger.error(f"DELETE - {router.prefix}/{chatroom_id}/user/{user_id}\nError removing member: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to remove member: {str(e)}"
+            detail=e.detail if hasattr(e, 'detail') else str(e)
         )

@@ -13,8 +13,8 @@ router = APIRouter(
 logger = logging.getLogger(__name__)
 
 
-@router.get("/{chatroom_id}")
-async def get_messages(chatroom_id: str):
+@router.get("")
+async def get_messages(chatroom_id: str) -> JSONResponse:
     """Retrieves all messages for a specific chatroom."""
     try:
         supabase = get_supabase()
@@ -24,27 +24,27 @@ async def get_messages(chatroom_id: str):
         if messages_response.data is None:
             messages_response.data = []
 
-        logger.info(f"GET - {router.prefix}/{chatroom_id}\nFound {len(messages_response.data)} message{'s' if len(messages_response.data) != 1 else ''} for chatroom {chatroom_id}")
+        logger.info(f"GET - {router.prefix}\nFound {len(messages_response.data)} message{'s' if len(messages_response.data) != 1 else ''} for chatroom {chatroom_id}")
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content=messages_response.data
         )
     except Exception as e:
-        logger.error(f"GET - {router.prefix}/{chatroom_id}\nError retrieving messages: {str(e)}")
+        logger.error(f"GET - {router.prefix}\nError retrieving messages: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve messages: {str(e)}"
+            detail=e.detail if hasattr(e, 'detail') else str(e)
         )
 
 
-@router.delete("/{chatroom_id}/{message_id}")
-async def delete_message(chatroom_id: str, message_id: str):
+@router.delete("/{message_id}")
+async def delete_message(message_id: str) -> JSONResponse:
     """Deletes the specified message from a specific chatroom."""
     try:
         supabase = get_supabase()
 
-        # Clean up message attachments
+        # Fetch message attachments
         attachments_response = (
             supabase.table("attachments")
             .select("attachment_id")
@@ -52,21 +52,22 @@ async def delete_message(chatroom_id: str, message_id: str):
             .execute()
         )
 
-        if attachments_response.data:
+        # Delete message entry in DB
+        delete_message_response = (
+            supabase.table("messages")
+            .delete()
+            .eq("message_id", message_id)
+            .execute()
+        )
+
+        if attachments_response.data and delete_message_response.data:
+            chatroom_id = delete_message_response.data[0]['chatroom_id']
             attachments_paths = [f"{chatroom_id}/{att['attachment_id']}" for att in attachments_response.data]
             (
                 supabase.storage
                 .from_("attachments")
                 .remove(attachments_paths)
             )
-
-        # Delete the message entry in DB
-        (
-            supabase.table("messages")
-            .delete()
-            .eq("message_id", message_id)
-            .execute()
-        )
 
         logger.info(f"DELETE - {router.prefix}/{chatroom_id}/{message_id}\nMessage deleted successfully")
 
@@ -82,5 +83,5 @@ async def delete_message(chatroom_id: str, message_id: str):
         logger.error(f"DELETE - {router.prefix}/{chatroom_id}/{message_id}\nError deleting message: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete message: {str(e)}"
+            detail=e.detail if hasattr(e, 'detail') else str(e)
         )
