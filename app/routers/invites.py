@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -14,18 +14,11 @@ router = APIRouter(
 logger = logging.getLogger(__name__)
 
 
-class AcceptInviteRequest(BaseModel):
-    user_id: str
-    invite_id: str
-
-
-class RejectInviteRequest(BaseModel):
-    user_id: str
-    invite_id: str
+class UpdateInviteRequest(BaseModel):
+    status: str  # "ACCEPTED" or "REJECTED"
 
 
 class SendInviteRequest(BaseModel):
-    user_id: str
     recipient_username: str
     chatroom_id: str
 
@@ -39,19 +32,26 @@ class InviteResponse(BaseModel):
     created_at: str
 
 
-@router.post("/accept")
-async def accept_invite(request: AcceptInviteRequest):
-    """Accept an invite and add user to chatroom members"""
+@router.put("/{invite_id}")
+async def update_invite(request: Request, invite_id: str, body: UpdateInviteRequest):
+    """Update the status of an invite (ACCEPTED or REJECTED)"""
     try:
+        user_id = request.state.user_id
         supabase = get_supabase()
 
-        logger.info(f"POST - {router.prefix}/accept\nUser {request.user_id} accepting invite {request.invite_id}")
+        logger.info(f"PUT - {router.prefix}/{invite_id}\nUser {user_id} updating invite {invite_id} to {body.status}")
+
+        if body.status not in ["ACCEPTED", "REJECTED"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid status. Must be either 'ACCEPTED' or 'REJECTED'"
+            )
 
         # Verify the invite belongs to the current user and is pending
         invite_check = (
             supabase.table("invites")
-            .select("chatroom_id, status, recipient_id")
-            .eq("invite_id", request.invite_id)
+            .select("status, recipient_id")
+            .eq("invite_id", invite_id)
             .execute()
         )
 
@@ -64,10 +64,10 @@ async def accept_invite(request: AcceptInviteRequest):
         invite_data = invite_check.data[0]
 
         # Verify the invite belongs to the current user
-        if invite_data["recipient_id"] != request.user_id:
+        if invite_data["recipient_id"] != user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can only accept your own invites"
+                detail="You can only update your own invites"
             )
 
         # Verify the invite is still pending
@@ -77,125 +77,13 @@ async def accept_invite(request: AcceptInviteRequest):
                 detail=f"Invite has already been {invite_data['status'].lower()}"
             )
 
-        chatroom_id = invite_data["chatroom_id"]
-
-        # Check if user is already a member (race condition protection)
-        existing_member = (
-            supabase.table("members")
-            .select("user_id")
-            .eq("user_id", request.user_id)
-            .eq("chatroom_id", chatroom_id)
-            .execute()
-        )
-
-        if existing_member.data and len(existing_member.data) > 0:
-            # Update invite status to accepted even if already a member
-            supabase.table("invites").update({
-                "status": "ACCEPTED"
-            }).eq("invite_id", request.invite_id).execute()
-
-            return JSONResponse(
-                status_code=status.HTTP_200_OK,
-                content={"message": "You are already a member of this chatroom"}
-            )
-        
-        # Update invite status to ACCEPTED
-        invite_response = (
-            supabase.table("invites")
-            .update({
-                "status": "ACCEPTED"
-            })
-            .eq("invite_id", request.invite_id)
-            .execute()
-        )
-
-        if not invite_response.data or len(invite_response.data) == 0:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to update invite status"
-            )
-
-        # Add user to members table
-        member_response = (
-            supabase.table("members")
-            .insert({
-                "user_id": request.user_id,
-                "chatroom_id": chatroom_id
-            })
-            .execute()
-        )
-
-        if not member_response.data:
-            # Rollback invite status if member insertion fails
-            supabase.table("invites").update({
-                "status": "PENDING"
-            }).eq("invite_id", request.invite_id).execute()
-
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to add user to chatroom"
-            )
-
-        logger.info(f"POST - {router.prefix}/accept\nSuccessfully accepted invite {request.invite_id}")
-
-        return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content={"message": "Invite accepted successfully"}
-        )
-
-    except Exception as e:
-        logger.error(f"POST - {router.prefix}/accept\nError accepting invite: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to accept invite: {str(e)}"
-        )
-
-
-@router.post("/reject")
-async def reject_invite(request: RejectInviteRequest):
-    """Reject an invite"""
-    try:
-        supabase = get_supabase()
-
-        logger.info(f"POST - {router.prefix}/reject\nUser {request.user_id} rejecting invite {request.invite_id}")
-
-        # Verify the invite belongs to the current user and is pending
-        invite_check = (
-            supabase.table("invites")
-            .select("status, recipient_id")
-            .eq("invite_id", request.invite_id)
-            .execute()
-        )
-
-        if not invite_check.data or len(invite_check.data) == 0:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Invite not found"
-            )
-        
-        invite_data = invite_check.data[0]
-        
-        # Verify the invite belongs to the current user
-        if invite_data["recipient_id"] != request.user_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can only reject your own invites"
-            )
-        
-        # Verify the invite is still pending
-        if invite_data["status"] != "PENDING":
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invite has already been {invite_data['status'].lower()}"
-            )
-        
-        # Update invite status to REJECTED
+        # Update the invite status
         response = (
             supabase.table("invites")
             .update({
-                "status": "REJECTED"
+                "status": body.status
             })
-            .eq("invite_id", request.invite_id)
+            .eq("invite_id", invite_id)
             .execute()
         )
 
@@ -204,35 +92,78 @@ async def reject_invite(request: RejectInviteRequest):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to update invite status"
             )
-        
-        logger.info(f"POST - {router.prefix}/reject\nSuccessfully rejected invite {request.invite_id}")
-        
+
+        if body.status == "ACCEPTED":
+            # Check if user is already a member (race condition protection)
+            existing_member = (
+                supabase.table("members")
+                .select("user_id")
+                .eq("user_id", user_id)
+                .eq("chatroom_id", response.data[0]["chatroom_id"])
+                .execute()
+            )
+
+
+
+            if existing_member.data and len(existing_member.data) > 0:
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content={"message": "You are already a member of this chatroom"}
+                )
+            else:
+                # Add user to members table
+                member_response = (
+                    supabase.table("members")
+                    .insert({
+                        "user_id": user_id,
+                        "chatroom_id": response.data[0]["chatroom_id"]
+                    })
+                    .execute()
+                )
+
+                if not member_response.data:
+                    # Rollback invite status if member insertion fails
+                    supabase.table("invites").update({
+                        "status": "PENDING"
+                    }).eq("invite_id", invite_id).execute()
+
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Failed to add user to chatroom"
+                    )
+        elif body.status == "REJECTED":
+            # No additional action needed for rejection
+            pass
+
+        logger.info(f"PUT - {router.prefix}/{invite_id}\nSuccessfully updated invite {invite_id} to {body.status}")
+
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content={"message": "Invite rejected successfully"}
+            content={"message": f"Invite {body.status.lower()} successfully"}
         )
-        
+
     except Exception as e:
-        logger.error(f"POST - {router.prefix}/reject\nError rejecting invite: {str(e)}")
+        logger.error(f"PUT - {router.prefix}/{invite_id}\nError updating invite {invite_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to reject invite: {str(e)}"
+            detail="Failed to update invite"
         )
 
 
-@router.post("/send")
-async def send_invite(request: SendInviteRequest):
+@router.post("")
+async def send_invite(request: Request, body: SendInviteRequest):
     """Send an invite to a user"""
     try:
+        user_id = request.state.user_id
         supabase = get_supabase()
 
-        logger.info(f"POST - {router.prefix}/send\nSending invite from {request.user_id} to {request.recipient_username} for chatroom {request.chatroom_id}")
+        logger.info(f"POST - {router.prefix}\nSending invite from {user_id} to {body.recipient_username} for chatroom {body.chatroom_id}")
 
         # Get recipient user ID by username
         user_response = (
             supabase.table("users")
             .select("user_id")
-            .eq("username", request.recipient_username)
+            .eq("username", body.recipient_username)
             .execute()
         )
 
@@ -245,7 +176,7 @@ async def send_invite(request: SendInviteRequest):
         recipient_id = user_response.data[0]["user_id"]
 
         # Prevent self-invitation
-        if recipient_id == request.user_id:
+        if recipient_id == user_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="You cannot invite yourself to a chatroom"
@@ -256,7 +187,7 @@ async def send_invite(request: SendInviteRequest):
             supabase.table("members")
             .select("user_id")
             .eq("user_id", recipient_id)
-            .eq("chatroom_id", request.chatroom_id)
+            .eq("chatroom_id", body.chatroom_id)
             .execute()
         )
 
@@ -271,7 +202,7 @@ async def send_invite(request: SendInviteRequest):
             supabase.table("invites")
             .select("invite_id")
             .eq("recipient_id", recipient_id)
-            .eq("chatroom_id", request.chatroom_id)
+            .eq("chatroom_id", body.chatroom_id)
             .eq("status", "PENDING")
             .execute()
         )
@@ -286,9 +217,9 @@ async def send_invite(request: SendInviteRequest):
         invite_response = (
             supabase.table("invites")
             .insert({
-                "sender_id": request.user_id,
+                "sender_id": user_id,
                 "recipient_id": recipient_id,
-                "chatroom_id": request.chatroom_id,
+                "chatroom_id": body.chatroom_id,
                 "status": "PENDING"
             })
             .execute()
@@ -300,7 +231,7 @@ async def send_invite(request: SendInviteRequest):
                 detail="Failed to create invite"
             )
 
-        logger.info(f"POST - {router.prefix}/send\nSuccessfully sent invite {invite_response.data[0]['invite_id']}")
+        logger.info(f"POST - {router.prefix}\nSuccessfully sent invite {invite_response.data[0]['invite_id']}")
 
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
@@ -311,17 +242,18 @@ async def send_invite(request: SendInviteRequest):
         )
 
     except Exception as e:
-        logger.error(f"POST - {router.prefix}/send\nError sending invite: {str(e)}")
+        logger.error(f"POST - {router.prefix}\nError sending invite: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to send invite: {str(e)}"
         )
 
 
-@router.get("/{user_id}")
-async def get_pending_invites(user_id: str):
+@router.get("")
+async def get_pending_invites(request: Request):
     """Get all pending invites for a user"""
     try:
+        user_id = request.state.user_id
         supabase = get_supabase()
 
         response = supabase.rpc("get_user_pending_invites", {"p_user_id": user_id}).execute()
@@ -329,7 +261,7 @@ async def get_pending_invites(user_id: str):
         if response.data is None:
             response.data = []
 
-        logger.info(f"GET - {router.prefix}/{user_id}\nFound {len(response.data)} pending invite{'s' if len(response.data) != 1 else ''} for {user_id}")
+        logger.info(f"GET - {router.prefix}\nFound {len(response.data)} pending invite{'s' if len(response.data) != 1 else ''} for {user_id}")
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
@@ -337,7 +269,7 @@ async def get_pending_invites(user_id: str):
         )
 
     except Exception as e:
-        logger.error(f"GET - {router.prefix}/{user_id}\nError fetching invites: {str(e)}")
+        logger.error(f"GET - {router.prefix}\nError fetching invites: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch invites: {str(e)}"

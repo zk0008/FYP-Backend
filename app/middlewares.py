@@ -35,11 +35,28 @@ async def auth_middleware(request: Request, call_next) -> Response:
     try:
         token = auth_header.split(' ')[1]
         supabase = get_supabase()
-        supabase.auth.get_user(token)  # JWT validation with Supabase
+        auth_user_response = supabase.auth.get_user(token)  # JWT validation with Supabase
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e)
+        )
+
+    try:
+        user_response = (
+            supabase
+            .from_("users")
+            .select("user_id, username")
+            .eq("auth_id", auth_user_response.user.id)
+            .execute()
+        )
+
+        request.state.user_id = user_response.data[0]["user_id"]
+        request.state.username = user_response.data[0]["username"]
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
         )
 
     response = await call_next(request)
