@@ -23,7 +23,7 @@ class EditChatroomRequest(BaseModel):
 
 
 @router.get("")
-async def get_chatrooms(request: Request):
+async def get_chatrooms(request: Request) -> JSONResponse:
     """Retrieves the chatrooms for a specific user."""
     try:
         user_id = request.state.user_id
@@ -49,7 +49,7 @@ async def get_chatrooms(request: Request):
 
 
 @router.get("/{chatroom_id}")
-async def get_chatroom(chatroom_id: str):
+async def get_chatroom(chatroom_id: str) -> JSONResponse:
     """Retrieves a specific chatroom."""
     try:
         supabase = get_supabase()
@@ -84,7 +84,7 @@ async def get_chatroom(chatroom_id: str):
 
 
 @router.post("")
-async def create_chatroom(request: Request, body: CreateChatroomRequest):
+async def create_chatroom(request: Request, body: CreateChatroomRequest) -> JSONResponse:
     """Creates a new chatroom."""
     try:
         user_id = request.state.user_id
@@ -123,7 +123,7 @@ async def create_chatroom(request: Request, body: CreateChatroomRequest):
 
 
 @router.put("/{chatroom_id}")
-async def edit_chatroom(chatroom_id: str, body: EditChatroomRequest):
+async def edit_chatroom(chatroom_id: str, body: EditChatroomRequest) -> JSONResponse:
     """Edits an existing chatroom."""
     try:
         supabase = get_supabase()
@@ -161,7 +161,7 @@ async def edit_chatroom(chatroom_id: str, body: EditChatroomRequest):
 
 
 @router.delete("/{chatroom_id}")
-async def delete_chatroom(chatroom_id: str):
+async def delete_chatroom(chatroom_id: str) -> JSONResponse:
     """Deletes a chatroom."""
     try:
         supabase = get_supabase()
@@ -220,7 +220,7 @@ async def delete_chatroom(chatroom_id: str):
 
 
 @router.delete("/{chatroom_id}/user/{user_id}")
-async def remove_member(chatroom_id: str, user_id: str):
+async def remove_member(chatroom_id: str, user_id: str) -> JSONResponse:
     """Removes a user from a chatroom (i.e., leaving the chatroom)."""
     try:
         supabase = get_supabase()

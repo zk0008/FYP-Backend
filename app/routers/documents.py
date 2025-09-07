@@ -40,7 +40,7 @@ async def upload_document(
     uploaded_document: UploadFile = File(...),
     chatroom_id: str = Form(...),
     bg_tasks: BackgroundTasks = BackgroundTasks()
-):
+) -> JSONResponse:
     """Uploads a document to the specified chatroom."""
     file_size_mb = uploaded_document.size / 1_000_000
 
@@ -92,13 +92,12 @@ async def upload_document(
         status_code=status.HTTP_200_OK,
         content={
             "message": "Document uploaded. Processing started.",
-            "filename": original_filename,
             "document_id": str(document_id)
         }
     )
 
 @router.get("")
-async def get_documents(chatroom_id: str):
+async def get_documents(chatroom_id: str) -> JSONResponse:
     """Retrieves all documents for a specific chatroom."""
     try:
         supabase = get_supabase()
@@ -122,7 +121,7 @@ async def get_documents(chatroom_id: str):
         )
 
 @router.delete("/{document_id}")
-async def delete_document(document_id: str):
+async def delete_document(document_id: str) -> JSONResponse:
     """Deletes a document (both the DB entry and the raw file)."""
     try:
         supabase = get_supabase()

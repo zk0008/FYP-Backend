@@ -33,7 +33,7 @@ class InviteResponse(BaseModel):
 
 
 @router.get("")
-async def get_pending_invites(request: Request):
+async def get_pending_invites(request: Request) -> JSONResponse:
     """Get all pending invites for a user"""
     try:
         user_id = request.state.user_id
@@ -60,7 +60,7 @@ async def get_pending_invites(request: Request):
 
 
 @router.post("")
-async def send_invite(request: Request, body: SendInviteRequest):
+async def send_invite(request: Request, body: SendInviteRequest) -> JSONResponse:
     """Send an invite to a user"""
     try:
         user_id = request.state.user_id
@@ -159,7 +159,7 @@ async def send_invite(request: Request, body: SendInviteRequest):
 
 
 @router.put("/{invite_id}")
-async def update_invite(request: Request, invite_id: str, body: UpdateInviteRequest):
+async def update_invite(request: Request, invite_id: str, body: UpdateInviteRequest) -> JSONResponse:
     """Update the status of an invite (ACCEPTED or REJECTED)"""
     try:
         user_id = request.state.user_id

@@ -28,7 +28,7 @@ async def invoke_groupgpt(
     chatroom_id: str = Form(...),
     content: str = Form(...),
     files: Optional[List[UploadFile]] = File(None)
-):
+) -> JSONResponse:
     try:
         logger.info(
             f"POST - {router.prefix}/groupgpt\n" +
