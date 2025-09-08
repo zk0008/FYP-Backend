@@ -1,14 +1,13 @@
 import base64
 import logging
 from pathlib import Path
-from typing import List, Optional
-from uuid import uuid4
+from typing import Dict, List, Optional
 
 from fastapi import (
     APIRouter,
-    HTTPException,
     File,
     Form,
+    HTTPException,
     Request,
     status,
     UploadFile
@@ -25,6 +24,7 @@ router = APIRouter(
 
 logger = logging.getLogger(__name__)
 
+# tmp_files directory is created in documents.py
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 TMP_FILES_DIR = PROJECT_ROOT / "tmp_files"
 
@@ -41,28 +41,32 @@ async def send_message(
         username = request.state.username
         user_id = request.state.user_id
         supabase = get_supabase()
-        
-        logger.info(
+
+        logger.debug(
             f"POST - {router.prefix}\n" +
             f"Sending message to chatroom {chatroom_id}\n" +
             f"User: {username} (ID: {user_id})\n" +
             f"Content: {content[:50]}{'...' if len(content) > 50 else ''}\n" +
-            f"Attachments: {len(attachments) if attachments else 0} files"
+            f"Attachments: {len(attachments) if attachments else 0} files\n" +
+            f"Invoking GroupGPT: {'@groupgpt' in content.lower()}"
         )
 
-        # Insert message into database
-        message_data = {
-            "chatroom_id": chatroom_id,
-            "content": content.strip(),
-            "sender_id": user_id,
-            "has_attachments": attachments is not None and len(attachments) > 0
-        }
+        # Build attachments data for inserting into DB
+        attachments_data = []
+        if attachments and len(attachments) > 0:
+            for attachment in attachments:
+                attachments_data.append({
+                    "p_filename": attachment.filename,
+                    "p_mime_type": attachment.content_type,
+                })
 
-        message_response = (
-            supabase.table("messages")
-            .insert(message_data)
-            .execute()
-        )
+        # Insert message with attachments into DB in a single atomic transaction
+        message_response = supabase.rpc("insert_message_with_attachments", {
+            "p_sender_id": user_id,
+            "p_chatroom_id": chatroom_id,
+            "p_content": content.strip(),
+            "p_attachments_data": attachments_data
+        }).execute()
 
         if not message_response.data:
             raise HTTPException(
@@ -70,24 +74,17 @@ async def send_message(
                 detail="Failed to insert message into database"
             )
 
-        message_id = message_response.data[0]["message_id"]
+        message_id = message_response.data["message_record"]["message_id"]
+        attachments_entries = message_response.data.get("attachments", [])
+        attachments_map = {att["filename"]: att["attachment_id"] for att in attachments_entries}
 
-        # Handle attachments if present
+        # Upload attachments to Supabase storage
         if attachments and len(attachments) > 0:
-            try:
-                await _handle_attachments(
-                    supabase=supabase,
-                    chatroom_id=chatroom_id,
-                    message_id=message_id,
-                    attachments=attachments
-                )
-            except Exception as e:
-                # Rollback message if attachment handling fails
-                supabase.table("messages").delete().eq("message_id", message_id).execute()
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Failed to handle attachments: {str(e)}"
-                )
+            await _upload_attachments(
+                chatroom_id=chatroom_id,
+                attachments=attachments,
+                attachments_map=attachments_map
+            )
 
         # Handle GroupGPT invocation if needed
         is_groupgpt_message = "@groupgpt" in content.lower()
@@ -120,16 +117,22 @@ async def send_message(
         )
 
 
-async def _handle_attachments(
-    supabase,
+async def _upload_attachments(
     chatroom_id: str,
-    message_id: str,
-    attachments: List[UploadFile]
+    attachments: List[UploadFile],
+    attachments_map: Dict[str, str]
 ) -> None:
-    """Helper function for handling attachment upload and insertion of database entries."""
-    for attachment in attachments:
-        attachment_id = str(uuid4())  # Generate a random UUID v4 for attachment ID
-        file_content = await attachment.read()
+    """Helper function for uploading attachment files into Supabase storage."""
+    supabase = get_supabase()
+
+    for att in attachments:
+        if att.filename not in attachments_map:
+            logger.error(f"No database entry found for filename: {att.filename}")
+            continue
+
+        attachment_id = attachments_map[att.filename]
+        await att.seek(0)  # Reset file pointer to beginning
+        file_content = await att.read()
 
         # Upload to Supabase storage
         storage_path = f"{chatroom_id}/{attachment_id}"
@@ -137,21 +140,9 @@ async def _handle_attachments(
             path=storage_path,
             file=file_content,
             file_options={
-                "content-type": attachment.headers["content-type"],
+                "content-type": att.headers["content-type"],
                 "upsert": "true"
             }
-        )
-
-        # Insert attachment entry into database
-        (
-            supabase.table("attachments")
-            .insert({
-                "attachment_id": attachment_id,
-                "message_id": message_id,
-                "mime_type": attachment.content_type,
-                "filename": attachment.filename
-            })
-            .execute()
         )
 
 
@@ -163,16 +154,15 @@ async def _invoke_groupgpt(username: str, chatroom_id: str, content: str, attach
     # Prepare files data for GroupGPT
     files_data = []
     if attachments:
-        for attachment in attachments:
-            # Reset file pointer to beginning
-            await attachment.seek(0)
-            file_content = await attachment.read()
+        for att in attachments:
+            await att.seek(0)  # Reset file pointer to beginning
+            file_content = await att.read()
             base64_content = base64.b64encode(file_content).decode("utf-8")
-            
+
             files_data.append({
                 "type": "media",
                 "source_type": "base64",
-                "mime_type": attachment.content_type,
+                "mime_type": att.content_type,
                 "data": base64_content
             })
 
