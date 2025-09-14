@@ -4,10 +4,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     # App variables
     title: str = "GroupGPT API"
-    summary: str = "API calls for the GroupGPT application"
+    summary: str = "API endpoints for the GroupGPT application"
     description: str = """
-    # GroupGPT API
-    Work in progress
+    This is a collection of API endpoints for the GroupGPT application.
     """
 
     # Environment variables

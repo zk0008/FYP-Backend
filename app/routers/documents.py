@@ -60,7 +60,7 @@ async def upload_document(
     with open(tmp_filepath, "wb") as buffer:
         shutil.copyfileobj(uploaded_document.file, buffer)
 
-    if ext in [".pdf"]:
+    if ext in {".pdf"}:
         pipeline = PdfPipeline(uploader_id=request.state.user_id, chatroom_id=chatroom_id)
     elif ext in {".jpg", ".jpeg", ".png"}:
         pipeline = ImagePipeline(uploader_id=request.state.user_id, chatroom_id=chatroom_id)
