@@ -26,7 +26,6 @@ claude_35_haiku = safe_init_chat_model("claude-3-5-haiku-20241022")
 claude_35_sonnet = safe_init_chat_model("claude-3-5-sonnet-20241022")
 claude_37_sonnet = safe_init_chat_model("claude-3-7-sonnet-20250219")
 
-gemini_2_flash_lite = safe_init_chat_model("gemini-2.0-flash-lite")
 gemini_25_flash = safe_init_chat_model("gemini-2.5-flash")
 gemini_25_pro = safe_init_chat_model("gemini-2.5-pro")
 

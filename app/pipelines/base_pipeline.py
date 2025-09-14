@@ -18,7 +18,7 @@ from app.constants import (
     EMBEDDING_MODEL_NAME
 )
 from app.dependencies import get_settings, get_supabase
-from app.llms import gemini_2_flash_lite
+from app.llms import gemini_25_flash
 from app.prompts import IMAGE_DESCRIPTION_PROMPT
 
 from .components.parsers import img_desc_parser, img_desc_reparser
@@ -54,7 +54,7 @@ class BasePipeline:
     def _invoke_model_with_retry(self, message: HumanMessage) -> AIMessage:
         for attempt in range(self.MAX_RETRIES):
             try:
-                response = gemini_2_flash_lite.invoke([message])
+                response = gemini_25_flash.invoke([message])
                 return response
             except Exception as e:
                 if attempt < self.MAX_RETRIES - 1:
