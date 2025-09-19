@@ -48,10 +48,10 @@ Your task is to accurately extract all content from the provided slide deck into
     2.7. Emphasis: Convert bold text to **bold** and italic text to *italic*.
 </instructions>
 
-<formatting>
+<format>
 You must begin your response with a hash: #
-The top level heading, denoted with a single hash, must contain the presentation title.
-</formatting>
+The top-level heading, denoted with a single hash, must contain the presentation title.
+</format>
 """
 
 RESPONSE_GENERATOR_PROMPT = """

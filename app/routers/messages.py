@@ -41,6 +41,7 @@ async def send_message(
         username = request.state.username
         user_id = request.state.user_id
         supabase = get_supabase()
+        is_groupgpt_message = "@groupgpt" in content.lower()  # Check for GroupGPT mention
 
         logger.debug(
             f"POST - {router.prefix}\n" +
@@ -48,7 +49,7 @@ async def send_message(
             f"User: {username} (ID: {user_id})\n" +
             f"Content: {content[:50]}{'...' if len(content) > 50 else ''}\n" +
             f"Attachments: {len(attachments) if attachments else 0} files\n" +
-            f"Invoking GroupGPT: {'@groupgpt' in content.lower()}"
+            f"Invoking GroupGPT: {is_groupgpt_message}"
         )
 
         # Build attachments data for inserting into DB
@@ -87,7 +88,6 @@ async def send_message(
             )
 
         # Handle GroupGPT invocation if needed
-        is_groupgpt_message = "@groupgpt" in content.lower()
         if is_groupgpt_message:
             try:
                 await _invoke_groupgpt(
