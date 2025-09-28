@@ -56,10 +56,10 @@ async def embed(request: APIRequest, bg_tasks: BackgroundTasks):
     return {"message": "Embedding process started."}
 
 
-@router.post('/gpt')
+@router.post('/gpt35')
 async def gpt_prompt(request: APIRequest):
     logger.info(
-        "POST - {router.prefix}/gpt\n" +
+        "POST - {router.prefix}/gpt35\n" +
         "Received GPT request with the following parameters:\n" +
         f"Topic: {request.topic}\n" +
         f"Query: {request.query[:50]}{'...' if len(request.query) > 50 else ''}"
@@ -67,7 +67,7 @@ async def gpt_prompt(request: APIRequest):
 
     res = get_answer(request.topic, request.query)
 
-    logger.debug(f"POST - {router.prefix}/gpt\nResponse: {res[:50]}{'...' if len(res) > 50 else ''}")
+    logger.debug(f"POST - {router.prefix}/gpt35\nResponse: {res[:50]}{'...' if len(res) > 50 else ''}")
 
     return res
 
