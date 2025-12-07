@@ -1,6 +1,6 @@
 # FYP-Backend
 
-This repository contains the backend FastAPI server for GroupGPT. See [here](https://github.com/nicholasbay/FYP-Frontend) for the frontend client for GroupGPT.
+This repository contains the backend FastAPI server for GroupGPT. See [here](https://github.com/nicholasbay/FYP-Frontend) for the frontend client.
 
 ## Contents
 
