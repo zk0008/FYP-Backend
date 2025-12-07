@@ -1,6 +1,6 @@
 # FYP-Backend
 
-This repository stores the backend FastAPI server for GroupGPT.
+This repository contains the backend FastAPI server for GroupGPT. See [here](https://github.com/nicholasbay/FYP-Frontend) for the frontend client for GroupGPT.
 
 ## Contents
 
@@ -18,7 +18,7 @@ Chatbots powered by large language models (LLMs) have become valuable tools for 
 
 - Real-time group messaging functionality is implemented using the Supabase Realtime API, specifically [Postgres Changes](https://supabase.com/docs/guides/realtime/postgres-changes).
 
-    - Client application listens to all insertions and deletions on the `messages` table in the database, filtered by the current chatroom ID.
+    - Client application listens to all insertions and deletions on the `messages` table in the database, filtered by the current chatroom ID. See the [frontend's custom hook](https://github.com/nicholasbay/FYP-Frontend/blob/main/hooks/messages/use-realtime-messages.ts) for the implementation details.
 
 - RAG functionality is implemented as a [hybrid search](./sql/rag/hybrid_search.sql) that combines [full text](./sql/rag/get_similar_text_chunks.sql) and [vector similarity search](./sql/rag/get_similar_embeddings.sql) rankings using reciprocal rank fusion.
 
@@ -61,7 +61,70 @@ Chatbots powered by large language models (LLMs) have become valuable tools for 
 
 ## Supabase Setup
 
-*TODO*
+> All of the following steps can be done through the Supabase online dashboard.
+
+### Create Supabase Project
+
+1. Create a Supabase project and update the Supabase variables within the `.env` file.
+
+### Set Up PostgreSQL Database
+
+1. Create the enumerated types required for the `invite` table.
+
+    | Schema | Name | Values |
+    | --- | --- | --- |
+    | `public` | `invite_status` | `PENDING`, `ACCEPTED`, `REJECTED` |
+
+2. Activate the following extensions for the database.
+
+    - `pgsodium`
+
+    - `vector`
+
+    - `pgjwt`
+
+3. Create the database tables according to the ER diagram below.
+
+    ![ER Diagram](./static/er_diagram.png)
+
+4. Create the SQL functions for each of the `.sql` files within [`sql_functions`](./sql_functions/). These functions will be remotely invoked for various GroupGPT functionalities.
+
+5. Turn on database publications in `supabase_realtime` for the following tables:
+
+    - `chatrooms`
+
+    - `documents`
+
+    - `invites`
+
+    - `messages`
+
+6. Create Row Level Security policies for each of the database tables.
+
+### Set Up Object Store
+
+1. Create the following buckets in the object store.
+
+    | Name | File Size Limit | Allowed MIME Types |
+    | --- | --- | --- |
+    | `attachments` | 5 MB | `image/jpeg`, `image/png`, `application/pdf`, `text/*` |
+    | `knowledge-bases` | 5 MB | `image/jpeg`, `image/png`, `application/pdf`, `text/*` |
+
+2. Create access control policies for both buckets. **4** policies should be created, one for each of `SELECT`, `INSERT`, `UPDATE`, and `DELETE` operations.
+
+    - For `SELECT`, set **USING expression** as `(bucket_id = '<bucket_name>'::text)`.
+
+    - For `INSERT`, set **WITH CHECK expression** as `(bucket_id = '<bucket_name'::text)`.
+
+    - For `UPDATE`, set **USING expression** as `(bucket_id = '<bucket_name>'::text)` and leave **WITH CHECK expression** empty.
+
+    - For `DELETE`, set **USING expression** as `(bucket_id = '<bucket_name>'::text)`.
+
+### Email Services
+
+The email service used for sending emails to GroupGPT users is [Resend](https://resend.com/home). See [here](https://supabase.com/docs/guides/auth/auth-smtp) for the steps to link Resend's SMTP server to the Supabase project.
+
+The HTML template used for the confirmation email can be found [here](./confirmation-email.html).
 
 ## Deployment
 
