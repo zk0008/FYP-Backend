@@ -42,7 +42,7 @@ See [`image_pipeline.py`](./app/pipelines/image_pipeline.py) for the implementat
 
 #### Chunk Retrieval
 
-Chunk retrieval is implemented as a hybrid of both full text and vector similarity searches. The rankings from both searches are combined into a single ordered-list using reciprocal rank fusion.
+Chunk retrieval is implemented as a hybrid of both full text and vector similarity searches. The rankings from both searches are combined into a single ordered list using reciprocal rank fusion.
 
 ![Chunk Retrieval Pipeline](./assets/chunk_retrieval_pipeline.png)
 
