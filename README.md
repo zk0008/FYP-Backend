@@ -16,7 +16,7 @@ This repository contains the backend FastAPI server for GroupGPT. See [here](htt
 
 ## Project Overview
 
-Chatbots powered by large language models (LLMs) have become valuable tools for individual productivity, but their focus on personal use and tendency to hallucinate hinders their effectiveness in group settings. GroupGPT simplifies knowledge sharing between multiple users by incorporating the chatbot as an additional group member and mitigates hallucinations through retrieval-augmented generation (RAG) and external tool invocations.
+Chatbots powered by large language models have become valuable tools for individual productivity, but their focus on personal use and tendency to hallucinate hinders their effectiveness in group settings. GroupGPT simplifies knowledge sharing between multiple users by incorporating the chatbot as an additional group member and mitigates hallucinations through retrieval-augmented generation (RAG) and external tool invocations.
 
 ## Functionality Deep Dive
 
