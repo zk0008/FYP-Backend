@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to GroupGPT</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #374151;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9fafb;
+        }
+        .email-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 32px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .logo {
+            margin-bottom: 24px;
+        }
+        .title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #111827;
+            margin: 0 0 16px 0;
+            line-height: 1.2;
+        }
+        .subtitle {
+            font-size: 18px;
+            color: #4b5563;
+            margin: 0;
+            line-height: 1.6;
+        }
+        .confirm-button {
+            display: inline-block;
+            background-color: #09090b;
+            color: #fafafa;
+            text-decoration: none;
+            padding: 12px 32px;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 16px;
+            margin: 8px 0;
+        }
+        .cta-section {
+            text-align: center;
+            margin: 32px 0;
+            padding: 16px 0;
+        }
+        .cta-description {
+            margin: 16px 0 0 0;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        .features-section {
+            margin: 48px 0 0 0;
+        }
+        .features-title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+            margin: 0 0 32px 0;
+        }
+        .feature-grid {
+            margin: 0;
+        }
+        .feature-card {
+            margin-bottom: 24px;
+            padding: 24px;
+            border-radius: 12px;
+            background-color: white;
+            border: 1px solid #e5e7eb;
+            border-top: 4px solid;
+        }
+        .feature-card.blue {
+            border-top-color: #3b82f6;
+        }
+        .feature-card.emerald {
+            border-top-color: #10b981;
+        }
+        .feature-card.violet {
+            border-top-color: #8b5cf6;
+        }
+        .feature-card.amber {
+            border-top-color: #f59e0b;
+        }
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        .feature-icon.blue {
+            background-color: #dbeafe;
+        }
+        .feature-icon.emerald {
+            background-color: #d1fae5;
+        }
+        .feature-icon.violet {
+            background-color: #ede9fe;
+        }
+        .feature-icon.amber {
+            background-color: #fef3c7;
+        }
+        .feature-title {
+            font-weight: 600;
+            color: #111827;
+            margin: 0 0 8px 0;
+            font-size: 16px;
+        }
+        .feature-description {
+            color: #6b7280;
+            font-size: 14px;
+            margin: 0;
+            line-height: 1.5;
+        }
+        .use-cases-section {
+            margin: 48px 0 0 0;
+        }
+        .use-cases-title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+            margin: 0 0 32px 0;
+        }
+        .use-case-card {
+            margin-bottom: 16px;
+            padding: 32px 24px;
+            border-radius: 16px;
+            text-align: center;
+        }
+        .use-case-card.blue-bg {
+            background-color: #eff6ff;
+        }
+        .use-case-card.green-bg {
+            background-color: #f0fdf4;
+        }
+        .use-case-card.purple-bg {
+            background-color: #faf5ff;
+        }
+        .use-case-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #111827;
+            margin: 0 0 12px 0;
+        }
+        .use-case-description {
+            color: #4b5563;
+            font-size: 14px;
+            margin: 0;
+            line-height: 1.5;
+        }
+        .footer {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 14px;
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="logo">
+                <img src="https://api-groupgpt.nicholasbay.me/static/GroupGPT.svg"
+                    alt="GroupGPT Logo"
+                    width="32"
+                    height="32"
+                    style="vertical-align: middle; margin-right: 8px;">
+                <span style="font-size: 24px; font-weight: 700; color: #111827;">GroupGPT</span>
+            </div>
+            <h1 class="title">Collaborate smarter on coursework and research</h1>
+            <p class="subtitle">
+                Transform your group projects with intelligent chatrooms that understand your documents, 
+                search the web, run code, and provide research-backed answers in real-time.
+            </p>
+        </div>
+
+        <div class="cta-section">
+            <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email" class="confirm-button">
+                Confirm My Sign Up
+            </a>
+            <p class="cta-description">
+                Click the button above to verify your email and start collaborating
+            </p>
+        </div>
+
+        <div class="features-section">
+            <h2 class="features-title">Key Features</h2>
+            
+            <!-- Project-Specific Knowledge -->
+            <div class="feature-card blue">
+                <div class="feature-icon blue">
+                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#2563eb" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                </div>
+                <h3 class="feature-title">Project-Specific Knowledge</h3>
+                <p class="feature-description">
+                    Upload different documents to separate chatrooms. Each project gets its own AI-powered knowledge base.
+                </p>
+            </div>
+
+            <!-- Real-time Collaboration -->
+            <div class="feature-card emerald">
+                <div class="feature-icon emerald">
+                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#10b981" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a3 3 0 01-3-3v-1" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12H5a2 2 0 01-2-2V4a2 2 0 012-2h4l4 4v2" />
+                    </svg>
+                </div>
+                <h3 class="feature-title">Real-time Collaboration</h3>
+                <p class="feature-description">
+                    Chat with teammates and GroupGPT simultaneously. Everyone sees GroupGPT's responses instantly for seamless knowledge sharing.
+                </p>
+            </div>
+
+            <!-- Images & Text -->
+            <div class="feature-card violet">
+                <div class="feature-icon violet">
+                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#8b5cf6" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </div>
+                <h3 class="feature-title">Images & Text</h3>
+                <p class="feature-description">
+                    Upload diagrams, charts, and images. GroupGPT can analyze and explain visual content alongside text.
+                </p>
+            </div>
+
+            <!-- Intelligent Tools -->
+            <div class="feature-card amber">
+                <div class="feature-icon amber">
+                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#f59e0b" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                </div>
+                <h3 class="feature-title">Intelligent Tools</h3>
+                <p class="feature-description">
+                    Web search, Python calculations, ArXiv research papers, and document retrieval — all in one chat.
+                </p>
+            </div>
+        </div>
+
+        <div class="use-cases-section">
+            <h2 class="use-cases-title">Perfect for Every Educational Scenario</h2>
+            
+            <div class="use-case-card blue-bg">
+                <h3 class="use-case-title">Research Projects</h3>
+                <p class="use-case-description">
+                    Upload research papers, generate summaries, search ArXiv for related work, and collaborate on literature reviews.
+                </p>
+            </div>
+
+            <div class="use-case-card green-bg">
+                <h3 class="use-case-title">STEM Coursework</h3>
+                <p class="use-case-description">
+                    Solve complex calculations with Python and get explanations for mathematical concepts.
+                </p>
+            </div>
+
+            <div class="use-case-card purple-bg">
+                <h3 class="use-case-title">Group Assignments</h3>
+                <p class="use-case-description">
+                    Share project documents, brainstorm ideas, and get GroupGPT's assistance while maintaining team communication.
+                </p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>
+                <strong>The GroupGPT Team</strong><br>
+                If you didn't create this account, you can safely ignore this email.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
