@@ -6,6 +6,8 @@ This repository contains the backend FastAPI server for GroupGPT. See [here](htt
 
 1. [Project Overview](#project-overview)
 
+2. [Functionality Deep Dive](#functionality-deep-dive)
+
 2. [Local Development](#local-development)
 
 3. [Supabase Setup](#supabase-setup)
@@ -16,21 +18,47 @@ This repository contains the backend FastAPI server for GroupGPT. See [here](htt
 
 Chatbots powered by large language models (LLMs) have become valuable tools for individual productivity, but their focus on personal use and tendency to hallucinate hinders their effectiveness in group settings. GroupGPT simplifies knowledge sharing between multiple users by incorporating the chatbot as an additional group member and mitigates hallucinations through retrieval-augmented generation (RAG) and external tool invocations.
 
-- Real-time group messaging functionality is implemented using the Supabase Realtime API, specifically [Postgres Changes](https://supabase.com/docs/guides/realtime/postgres-changes).
+## Functionality Deep Dive
 
-    - Client application listens to all insertions and deletions on the `messages` table in the database, filtered by the current chatroom ID. See the [frontend's custom hook](https://github.com/nicholasbay/FYP-Frontend/blob/main/hooks/messages/use-realtime-messages.ts) for the implementation details.
+### Real-Time Group Messaging
 
-- RAG functionality is implemented as a [hybrid search](./sql/rag/hybrid_search.sql) that combines [full text](./sql/rag/get_similar_text_chunks.sql) and [vector similarity search](./sql/rag/get_similar_embeddings.sql) rankings using reciprocal rank fusion.
+The real-time group messaging functionality is implemented using the Supabase Realtime API, specifically [Postgres Changes](https://supabase.com/docs/guides/realtime/postgres-changes).
 
-- The tools available to the chatbot are:
+The client application listens to all insertions and deletions on the `messages` table in the database, filtered by the current chatroom ID. See the [frontend's custom hook](https://github.com/nicholasbay/FYP-Frontend/blob/main/hooks/messages/use-realtime-messages.ts) for the implementation details.
 
-    - [arXiv Search](./app/workflows/tools/arxiv.py)
+### Retrieval-Augmented Generation
 
-    - [Chunk Retriever](./app/workflows/tools/chunk_retriever.py)
+#### File Indexing
 
-    - [Python REPL](./app/workflows/tools/python_repl.py)
+GroupGPT accepts PDFs and images as inputs to its knowledge base, with separate indexing pipelines for each.
 
-    - [Web Search](./app/workflows/tools/web_search.py)
+![PDF Indexing Pipeline](./assets/pdf-indexing-pipeline.png)
+
+See [`pdf_pipeline.py`](./app/pipelines/pdf_pipeline.py) for the implementation details.
+
+![Image Indexing Pipeline](./assets/image-indexing-pipeline.png)
+
+See [`image_pipeline.py`](./app/pipelines/image_pipeline.py) for the implementation details.
+
+#### Chunk Retrieval
+
+Chunk retrieval is implemented as a hybrid of both full text and vector similarity searches. The rankings from both searches are combined into a single ordered-list using reciprocal rank fusion.
+
+![Chunk Retrieval Pipeline](./assets/chunk_retrieval_pipeline.png)
+
+See [`hybrid_search.sql`](./sql_functions/rag/hybrid_search.sql), [`get_similar_text_chunks.sql`](./sql_functions/rag/get_similar_text_chunks.sql), and [`get_similar_embeddings.sql`](./sql_functions/rag/get_similar_embeddings.sql) for the implementation details.
+
+### Chatbot Tools
+
+The tools available to the chatbot are:
+
+- [arXiv Search](./app/workflows/tools/arxiv.py) — Searches the arXiv database for relevant published research.
+
+- [Chunk Retriever](./app/workflows/tools/chunk_retriever.py) — Searches the knowledge base for specific information relating to the user's context.
+
+- [Python REPL](./app/workflows/tools/python_repl.py) — Executes Python code and returns the printed result; useful for performing accurate calculations.
+
+- [Web Search](./app/workflows/tools/web_search.py) — Searches the web for up-to-date information.
 
 ## Local Development
 
@@ -85,7 +113,7 @@ Chatbots powered by large language models (LLMs) have become valuable tools for 
 
 3. Create the database tables according to the ER diagram below.
 
-    ![ER Diagram](./static/er_diagram.png)
+    ![ER Diagram](./assets/er_diagram.png)
 
 4. Create the SQL functions for each of the `.sql` files within [`sql_functions`](./sql_functions/). These functions will be remotely invoked for various GroupGPT functionalities.
 
