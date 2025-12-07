@@ -50,15 +50,14 @@ See [`hybrid_search.sql`](./sql_functions/rag/hybrid_search.sql), [`get_similar_
 
 ### Chatbot Tools
 
-The tools available to the chatbot are:
+The following tools are available to the chatbot.
 
-- [arXiv Search](./app/workflows/tools/arxiv.py) — Searches the arXiv database for relevant published research.
-
-- [Chunk Retriever](./app/workflows/tools/chunk_retriever.py) — Searches the knowledge base for specific information relating to the user's context.
-
-- [Python REPL](./app/workflows/tools/python_repl.py) — Executes Python code and returns the printed result; useful for performing accurate calculations.
-
-- [Web Search](./app/workflows/tools/web_search.py) — Searches the web for up-to-date information.
+| Tool | Description |
+|------|-------------|
+| [arXiv Search](./app/workflows/tools/arxiv.py) | Searches the arXiv database for relevant published research |
+| [Chunk Retriever](./app/workflows/tools/chunk_retriever.py) | Searches the knowledge base for specific information related to the user's context |
+| [Python REPL](./app/workflows/tools/python_repl.py) | Executes Python code and returns the printed result; useful for accurate calculations |
+| [Web Search](./app/workflows/tools/web_search.py) | Searches the web for up-to-date information |
 
 ## Local Development
 
