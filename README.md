@@ -20,7 +20,7 @@ Chatbots powered by large language models (LLMs) have become valuable tools for 
 
     - Client application listens to all insertions and deletions on the `messages` table in the database, filtered by the current chatroom ID.
 
-- RAG functionality is implemented as a [hybrid search]() that combines [full text]() and [vector similarity search]() rankings using reciprocal rank fusion.
+- RAG functionality is implemented as a [hybrid search](./sql/rag/hybrid_search.sql) that combines [full text](./sql/rag/get_similar_text_chunks.sql) and [vector similarity search](./sql/rag/get_similar_embeddings.sql) rankings using reciprocal rank fusion.
 
 - The tools available to the chatbot are:
 
