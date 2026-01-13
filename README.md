@@ -86,6 +86,14 @@ The following tools are available to the chatbot.
     python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     ```
 
+5. python version/environment
+
+    ```bash
+    which python   # on macOS/Linux
+    python --version
+    python3.12 --version
+    ```
+
 ## Supabase Setup
 
 > All of the following steps can be done through the Supabase online dashboard.
