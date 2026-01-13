@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 from langgraph.graph import END, START, StateGraph
 
 from app.dependencies import get_supabase
-from app.llms import gemini_25_flash
+from app.llms import gpt_41_mini
 
 from .nodes import FilesAttacher, HistoryFetcher, ResponseGenerator
 from .state import ChatState
@@ -16,7 +16,7 @@ class GroupGPTGraph:
 
         self.files_attacher = FilesAttacher()  # Responsible for attaching files to messages
         self.history_fetcher = HistoryFetcher(supabase=self.supabase)  # Responsible for fetching chat history
-        self.response_generator = ResponseGenerator(supabase=self.supabase, llm=gemini_25_flash)  # Responsible for generating responses
+        self.response_generator = ResponseGenerator(supabase=self.supabase, llm=gpt_41_mini)  # Responsible for generating responses
 
         # Build graph
         self.graph = self._build_graph()

@@ -139,7 +139,7 @@ class PdfPipeline(BasePipeline):
         try:
             pdf = google_client.files.upload(file=filepath)
             response = google_client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gpt_41_mini",
                 contents=[pdf, "\n\n", SLIDE_EXTRACTION_PROMPT]
             )
             google_client.files.delete(name=pdf.name)

@@ -1,4 +1,5 @@
 import base64
+from io import BytesIO
 import logging
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -15,6 +16,7 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 
 from app.dependencies import get_supabase
+from app.llms import openai_client
 from app.workflows.graph import GroupGPTGraph
 
 router = APIRouter(
@@ -157,14 +159,38 @@ async def _invoke_groupgpt(username: str, chatroom_id: str, content: str, attach
         for att in attachments:
             await att.seek(0)  # Reset file pointer to beginning
             file_content = await att.read()
-            base64_content = base64.b64encode(file_content).decode("utf-8")
+            # Vertex AI requires PDFs to be uploaded as files
+            # base64_content = base64.b64encode(file_content).decode("utf-8")
 
-            files_data.append({
-                "type": "media",
-                "source_type": "base64",
-                "mime_type": att.content_type,
-                "data": base64_content
-            })
+            # files_data.append({
+            #     "type": "media",
+            #     "source_type": "base64",
+            #     "mime_type": att.content_type,
+            #     "data": base64_content
+            # })
+
+            # Handling for PDF files upload to OpenAI files endpoint
+            if att.content_type == "application/pdf":
+                file_obj = BytesIO(file_content)
+                file_obj.name = att.filename or "attachment.pdf"
+                uploaded = openai_client.files.create(
+                    file=file_obj,
+                    purpose="assistants"
+                )
+                files_data.append({
+                    "type": "file",
+                    "file": {
+                        "file_id": uploaded.id
+                    }
+                })
+            else:
+                base64_content = base64.b64encode(file_content).decode("utf-8")
+                files_data.append({
+                    "type": "media",
+                    "source_type": "base64",
+                    "mime_type": att.content_type,
+                    "data": base64_content
+                })
 
     # Invoke GroupGPT
     graph = GroupGPTGraph()
